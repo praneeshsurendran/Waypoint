@@ -1,4 +1,4 @@
-import type { AuditEntry } from '../../domain/models'
+import type { AuditEntry } from '@/types/models'
 
 /** Only the seven records visible in the source are supplied as identities. */
 export const sourceAudit: AuditEntry[] = [

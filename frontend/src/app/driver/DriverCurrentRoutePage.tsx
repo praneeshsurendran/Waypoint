@@ -1,0 +1,85 @@
+import { DriverRouteSequence } from '@/components/organisms/driver/DriverRouteSequence'
+import { DriverActions } from '@/components/molecules/driver/DriverActions'
+import { useDriverStop } from '@/queries/driver/useDriverData'
+import { DriverScreen } from '@/components/templates/driver/DriverScreen'
+import { DriverRouteMap } from '@/components/organisms/driver/DriverRouteMap'
+import { DriverNextStop } from '@/components/organisms/driver/DriverNextStop'
+import { DriverLink } from '@/components/molecules/driver/DriverLink'
+import { DriverButton as Button } from '@/components/atoms/driver/DriverButton'
+import { useApis } from '@/app/providers/ApisContext'
+import { useHandoffAction as useDriverAction } from '@/queries/delivery/useHandoffAction'
+import { Notice, Panel } from '@/components/molecules/Common'
+
+export default function DriverCurrentRoutePage() {
+  const state = useDriverStop()
+  const apis = useApis()
+  const action = useDriverAction()
+  return (
+    <DriverScreen
+      title="Current route"
+      loading={state.isPending}
+      error={state.error}
+      retry={() => void state.refetch()}
+      description={`${state.session.vehicleId ?? 'Assigned vehicle'} · Trip ${state.data?.load?.trip ?? 'unassigned'} · Revision ${state.data?.route.revision ?? '—'}`}
+    >
+      {!state.online && (
+        <Notice title="Offline route">
+          Your route, manifest and photographs remain saved on this device. Sync resumes when a
+          connection returns.
+        </Notice>
+      )}
+      {state.data && (
+        <>
+          <div className="grid grid-cols-1 items-start gap-4 min-[901px]:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
+            <div className="flex min-w-0 flex-col gap-4">
+              <DriverNextStop state={state} />
+              <Panel title="Daily shift progress">
+                <div className="panel-body flex min-w-0 flex-col gap-4">
+                  <h2>
+                    {state.data.stops.filter((stop) => stop.deliveryState === 'delivered').length} /{' '}
+                    {state.data.stops.length} stops
+                  </h2>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Only accepted delivery proofs count as complete.
+                  </p>
+                </div>
+              </Panel>
+            </div>
+            <DriverRouteMap
+              stops={state.data.stops}
+              stop={state.stop}
+              vehicle={state.data.vehicle}
+              offline={!state.online}
+            />
+          </div>
+          <DriverRouteSequence state={state} />
+          <DriverActions>
+            {!state.data?.route.started && (
+              <Button
+                disabled={action.isPending}
+                onClick={() => {
+                  action.runAndNavigate(
+                    () => apis.delivery.startRoute(),
+                    '/driver/route',
+                    'Route started',
+                  )
+                }}
+              >
+                {action.isPending ? 'Starting route…' : 'Start Route (Depart Depot)'}
+              </Button>
+            )}
+            <DriverLink to="/driver/route/details" variant="secondary">
+              Route details & manifest
+            </DriverLink>
+            <DriverLink to={state.href('/driver/issues')} variant="secondary">
+              Report issue
+            </DriverLink>
+            <DriverLink to="/driver/sync" variant="outline">
+              Saved records
+            </DriverLink>
+          </DriverActions>
+        </>
+      )}
+    </DriverScreen>
+  )
+}

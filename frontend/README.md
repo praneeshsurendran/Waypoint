@@ -1,16 +1,16 @@
 # WAYPOINT frontend
 
-A responsive operations demo for Waypoint. Includes Dispatcher, Store Manager, Loader, Driver, Entry & Account, Administration, and Recovery. All workspaces share one persistent local dataset. Working on a role? Start with [docs/ROLE_MODULES.md](docs/ROLE_MODULES.md).
+A responsive operations demo for Waypoint. Includes Dispatcher, Store Manager, Loader, Driver, Entry & Account, Administration, and Recovery. All workspaces share one persistent local dataset. Start with [the frontend architecture guide](docs/ARCHITECTURE.md) for component placement, feature ownership, API boundaries, and tests.
 
 Loader uses depot-scoped API reads, vehicle/trip deep links, structured shortfalls,
 revision acknowledgment and reviewed loading photographs. Dispatcher review and
 publication now generate every allocated manifest. See
-[Loader implementation and backend handoff](docs/LOADER_IMPLEMENTATION.md) for
+[Loader implementation and backend handoff](docs/ARCHITECTURE.md) for
 contracts, local-only persistence and remaining server dependencies.
 
 ## Run locally
 
-Use Node.js 22.13+ (or a newer supported LTS) and npm. The project's `.nvmrc` pins Node.js 22.23.3.
+Use Node.js 20.19+ or a supported newer LTS and npm. Validation for this migration used Node.js 22.23.3.
 
 ```powershell
 cd C:\Users\abdul\Waypoint\frontend
@@ -40,6 +40,8 @@ Open `http://127.0.0.1:4173`. Serve `dist` with a static host that rewrites appl
 
 ```powershell
 npm run lint
+npm run typecheck
+npm run check:architecture
 npm run test
 npm run build
 npx playwright install chromium
@@ -85,14 +87,36 @@ Dexie stores snapshots, image blobs, and queue entries in IndexedDB. Evidence, i
 
 ## Project documentation
 
-- `docs/ROLE_MODULES.md`: module ownership, adding screens, the data contract and backend integration.
-- `docs/DRIVER_IMPLEMENTATION.md`: native Driver route/state map, file inventory, verification and mocked integrations.
-- `docs/ARCHITECTURE.md`: layers, transactions, backend integration seams.
+- `docs/ARCHITECTURE.md`: source layout, component placement, contracts, services, persistence, and test conventions.
+- `docs/MIGRATION_VALIDATION.md`: validation results and known browser-test limitations.
 
 ## Driver design continuity
 
-Driver now uses separate native React pages for the Figma journey and recovery states. The obsolete Driver frame renderer was removed. The shared web shell and design tokens are retained. Driver uses the same React Leaflet map as Dispatcher, with saved-stop overlays and functional zoom/recentering. Navigation instructions and upload acknowledgements remain explicitly simulated. Driver components follow atoms, molecules, organisms, templates, pages and hooks, styled with Tailwind. See [the Driver report](docs/DRIVER_IMPLEMENTATION.md) for implementation details and intentional differences from the prototype.
+Driver now uses separate native React pages for the Figma journey and recovery states. The obsolete Driver frame renderer was removed. The shared web shell and design tokens are retained. Driver uses the same React Leaflet map as Dispatcher, with saved-stop overlays and functional zoom/recentering. Navigation instructions and upload acknowledgements remain explicitly simulated. Driver components follow atoms, molecules, organisms, templates, pages and hooks, styled with Tailwind. See [the Driver report](docs/ARCHITECTURE.md) for implementation details and intentional differences from the prototype.
 
 ## Stack
 
-React, TypeScript, Vite, Tailwind CSS, shadcn/ui with Radix controls, TanStack Query, Dexie, vite-plugin-pwa, Leaflet, Framer Motion, Vitest, and Playwright. DM Sans fonts are bundled locally. Each route is loaded as its own chunk; the production service worker precaches them for offline navigation. Product pages reflow at 760px and 1100px.
+React, TypeScript, Vite, Tailwind CSS, shadcn/ui with Radix controls, TanStack Query, Dexie, vite-plugin-pwa, Leaflet, Framer Motion, Vitest, and Playwright. DM Sans fonts are bundled locally. Route modules retain their existing lazy-loading boundaries; the production service worker precaches them for offline navigation. Product pages reflow at 760px and 1100px.
+
+## Source organization
+
+Route pages live in `src/app/<feature>`; providers and routing live in `src/app/providers`
+and `src/app/router`. Reusable UI lives in `src/components/{atoms,molecules,organisms,templates}`.
+The existing features are administration, dispatcher, driver, entry-account, loader,
+store-manager, recovery, and demo. Shared navigation metadata lives in `src/constants/workspaces`.
+
+`src/api` owns HTTP transport, endpoint paths, and errors. Shared models, backend DTOs,
+and API contracts live in `src/types`. `src/queries`
+owns TanStack Query reads, mutations, and synchronization hooks. Business services live in `src/services`; pure business calculations and validation helpers
+live in `src/utils`. Local persistence and concrete API implementations live in `src/infrastructure`.
+The composition root still selects the HTTP backend when `VITE_API_URL` is configured and
+otherwise uses the IndexedDB demo. Authentication session integration lives in `src/infrastructure/auth.ts`.
+
+All tests live under `src/test`: pure unit tests in `unit`, repository and API/workflow
+integration tests in `integration`, Playwright specs and helpers in `e2e`, and shared test
+data in `fixtures`. Run `npm run test:unit` or `npm run test:integration` separately;
+`npm run test` runs both. Playwright discovers only `*.spec.ts` under `src/test/e2e`.
+Production modules use the existing `@/` alias; Playwright helpers use relative imports.
+
+See [the architecture guide](docs/ARCHITECTURE.md) for the maintained source layout and
+[validation notes](docs/MIGRATION_VALIDATION.md) for verification results.

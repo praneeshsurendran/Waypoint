@@ -1,5 +1,5 @@
-import type { SyncGateway } from '../../domain/ports'
-import type { Evidence, QueuedAction } from '../../domain/models'
+import type { SyncGateway } from '@/types/operations'
+import type { Evidence, QueuedAction } from '@/types/models'
 
 /** Explicit frontend simulation. Replace this adapter with the future authenticated API. */
 export class DemoSyncGateway implements SyncGateway {

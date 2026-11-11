@@ -1,4 +1,4 @@
-import type { MemberActivity, TeamMember } from '../../domain/models'
+import type { MemberActivity, TeamMember } from '@/types/models'
 
 /** The six identities actually shown in Figma; remaining source totals are aggregates. */
 export const sourceTeam: TeamMember[] = [

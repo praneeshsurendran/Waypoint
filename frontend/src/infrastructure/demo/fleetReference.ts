@@ -1,4 +1,4 @@
-import type { Vehicle } from '../../domain/models'
+import type { Vehicle } from '@/types/models'
 
 // Identities and fleet states transcribed from Figma node 74:1309.
 // Capacity and coordinates are demo assumptions, not live telemetry.

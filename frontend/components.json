@@ -10,10 +10,10 @@
     "cssVariables": true
   },
   "aliases": {
-    "components": "@/presentation/shared",
-    "utils": "@/presentation/shared/lib/utils",
-    "ui": "@/presentation/shared/atoms",
-    "lib": "@/presentation/shared/lib",
-    "hooks": "@/presentation/hooks"
+    "components": "@/components",
+    "utils": "@/utils/cn",
+    "ui": "@/components/atoms",
+    "lib": "@/utils",
+    "hooks": "@/hooks"
   }
 }

@@ -1,16 +1,16 @@
+import { getToken, authChangedEvent } from '@/infrastructure/storage/authSession'
 import { useEffect, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { liveQuery } from 'dexie'
-import { ServicesContext } from '../../presentation/providers/ServicesContext'
-import { OperationsService } from '../../application/OperationsService'
-import { WaypointDatabase } from '../../infrastructure/persistence/database'
-import { DexieOperationsRepository } from '../../infrastructure/persistence/DexieOperationsRepository'
-import { DemoSyncGateway } from '../../infrastructure/demo/DemoSyncGateway'
-import { createEmptySeed } from '../../infrastructure/demo/seed'
-import { snapshotKey } from '../../presentation/hooks/useOperations'
-import { ApisContext } from '../../presentation/providers/ApisContext'
-import { createSwitchableApis } from '../apis'
-import { authChangedEvent } from '../../infrastructure/http/apiClient'
+import { ServicesContext } from '@/app/providers/ServicesContext'
+import { OperationsService } from '@/services/OperationsService'
+import { WaypointDatabase } from '@/infrastructure/storage/database'
+import { DexieOperationsRepository } from '@/infrastructure/storage/DexieOperationsRepository'
+import { DemoSyncGateway } from '@/infrastructure/demo/DemoSyncGateway'
+import { createEmptySeed } from '@/infrastructure/demo/seed'
+import { snapshotKey } from '@/queries/useOperations'
+import { ApisContext } from '@/app/providers/ApisContext'
+import { createSwitchableApis } from '@/app/providers/createApis'
 
 const database = new WaypointDatabase()
 // With a real backend configured the browser starts empty; the demo's sample data is not loaded.
@@ -21,6 +21,7 @@ const service = new OperationsService(
     realBackend ? { seed: createEmptySeed, purgeDemo: true } : undefined,
   ),
   new DemoSyncGateway(),
+  () => Boolean(getToken()),
 )
 const apis = createSwitchableApis(service)
 service.setApis(apis)

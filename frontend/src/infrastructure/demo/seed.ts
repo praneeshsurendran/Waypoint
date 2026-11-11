@@ -1,14 +1,10 @@
-import { sourceFleet } from './fleetReference'
-import { sourceAudit } from './auditReference'
-import type { Order, Snapshot, Vehicle } from '../../domain/models'
-import { sourceTeam, unlistedTeamCounts } from './teamReference'
-import { outletOrderHistory } from './orderHistory'
-import {
-  defaultWindow,
-  outletProfiles,
-  profileFromInput,
-  type OutletProfile,
-} from '../../domain/outlets'
+import { sourceFleet } from '@/infrastructure/demo/fleetReference'
+import { sourceAudit } from '@/infrastructure/demo/auditReference'
+import type { Order, Snapshot, Vehicle } from '@/types/models'
+import { sourceTeam, unlistedTeamCounts } from '@/infrastructure/demo/teamReference'
+import { outletOrderHistory } from '@/infrastructure/demo/orderHistory'
+import { defaultWindow, outletProfiles, profileFromInput } from '@/utils/outlets'
+import { type OutletProfile } from '@/types/outlets'
 
 const demand: [string, string, Order['brand'], string, number, number, Order['temperature']][] = [
   ['ORD1042', 'OUT001', 'Fresh', '05:30', 1.2, 120, 'Chilled'],

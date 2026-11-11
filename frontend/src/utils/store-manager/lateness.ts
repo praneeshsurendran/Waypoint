@@ -1,0 +1,46 @@
+import type { Lateness } from '@/types/store-manager/lateness'
+import { TIME_ZONE, formatClock } from '@/utils/calendar'
+import type { Order, Stop } from '@/types/models'
+import { windowEnd } from '@/utils/store-manager/orderView'
+import { minutes } from '@/schemas/store-manager/windows'
+
+/** A dispatched, undelivered order whose expected arrival is after its window closes. */
+export function runningLate(order: Order, stop?: Stop): Lateness | undefined {
+  if (!stop || !['Scheduled', 'En route'].includes(order.status)) return undefined
+  const end = windowEnd(order)
+  const minutesLate = minutes(stop.eta) - minutes(end)
+  return minutesLate > 0 ? { minutesLate, expected: stop.eta, windowEnd: end } : undefined
+}
+
+/** Minutes after the window closed that a delivered order arrived, when it did. */
+export function deliveredLate(order: Order): number | undefined {
+  if (order.status !== 'Delivered' || !order.deliveredAt) return undefined
+  // The window belongs to the delivery day: an arrival on an earlier day is early, a later one is late.
+  const arrivedOn = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(
+    new Date(order.deliveredAt),
+  )
+  const daysLate = order.deliveryDate
+    ? Math.round((Date.parse(arrivedOn) - Date.parse(order.deliveryDate)) / 86_400_000)
+    : 0
+  if (daysLate < 0) return undefined
+  const late = daysLate * 1440 + minutes(formatClock(order.deliveredAt)) - minutes(windowEnd(order))
+  return late > 0 ? late : undefined
+}
+
+export function lateOrders(orders: Order[], stops: Stop[]) {
+  return orders.flatMap((order) => {
+    const late = runningLate(
+      order,
+      stops.find((stop) => stop.orderIds.includes(order.id)),
+    )
+    return late ? [{ order, late }] : []
+  })
+}
+
+/** "25 minutes", "1 hour", "1 hour 5 minutes". */
+export function durationText(total: number) {
+  const hours = Math.floor(total / 60)
+  const rest = total % 60
+  const part = (count: number, unit: string) => `${count} ${unit}${count === 1 ? '' : 's'}`
+  return [hours && part(hours, 'hour'), rest && part(rest, 'minute')].filter(Boolean).join(' ')
+}

@@ -1,4 +1,4 @@
-import type { Order, Temperature } from '../../domain/models'
+import type { Order, Temperature } from '@/types/models'
 
 /**
  * Demo history for OUT001: its Fresh orders for the eight operating days before the demo's Friday,

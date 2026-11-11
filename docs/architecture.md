@@ -12,7 +12,7 @@ flowchart LR
     direction TB
     Roles["Role modules<br/>dispatcher, store manager,<br/>loader, driver"]
     Shell["Shared shell, sign-in and<br/>role guards"]
-    Contract["Apis contract<br/>(domain/api)"]
+    Contract["Apis contract<br/>(types/api)"]
     Http["HTTP adapter<br/>JWT bearer token"]
     Local["Local demo adapter<br/>(only with no backend configured)"]
     Offline[("IndexedDB (Dexie)<br/>offline queue, saved proof,<br/>store outbox")]
@@ -104,7 +104,7 @@ State changes are also written to an audit log with the actor and the before and
   per-unit figures in the training data. Times shown to people come from the business clock (a fixed demo
   day with the real time of day), so an order's placed, planned, departed and delivered times agree.
 - **A screen contract, two implementations.** Screens read and write through the `Apis` contract in
-  `frontend/src/domain/api`. The HTTP adapter calls the backend; a local adapter backed by IndexedDB exists
+  `frontend/src/types/api`. The HTTP adapter calls the backend; a local adapter backed by IndexedDB exists
   for development without a backend and is not used when `VITE_API_URL` is set.
 - **Offline first for the field roles.** Delivery proof (photo, signature, quantities) is saved in
   IndexedDB and synced when the connection returns; the store manager's changes made offline wait in an

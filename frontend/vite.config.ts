@@ -6,6 +6,22 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              // Keep the stable React runtime cacheable across application releases.
+              // Leave feature dependencies to automatic splitting so they stay lazy.
+              name: 'react-runtime',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
