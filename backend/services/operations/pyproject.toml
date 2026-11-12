@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waypoint-operations"
+version = "0.1.0"
+description = "Waypoint delivery planning API"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi==0.162.4",
+    "uvicorn[standard]==0.32.1",
+    "sqlalchemy==2.0.36",
+    "alembic==1.14.0",
+    "psycopg[binary]==3.3.8",
+    "pydantic==2.10.2",
+    "pydantic-settings==2.6.1",
+    "PyJWT==2.15.1",
+    "bcrypt==4.2.1",
+    "python-multipart==0.0.33",
+    "httpx==0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.24.0",
+    "httpx==0.28.0",
+    "ruff==0.8.3",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["src", "../../packages/contracts", "../../packages/security", "../../packages/observability", "../../packages/messaging"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["app*", "seed*"]

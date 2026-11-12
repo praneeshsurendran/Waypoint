@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class ProofStorage(Protocol):
+    def put(self, key: str, content: bytes, content_type: str) -> None: ...
+    def read(self, key: str) -> bytes: ...

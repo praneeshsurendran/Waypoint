@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waypoint-network-fleet"
+version = "0.2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.162.4",
+    "uvicorn[standard]==0.32.1",
+    "sqlalchemy==2.0.36",
+    "alembic==1.14.0",
+    "psycopg[binary]==3.3.8",
+    "pydantic==2.10.2",
+    "pydantic-settings==2.6.1",
+    "httpx==0.28.0",
+    "waypoint-contracts==0.2.0",
+    "waypoint-security==0.2.0",
+    "waypoint-observability==0.2.0",
+    "waypoint-messaging==0.2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true

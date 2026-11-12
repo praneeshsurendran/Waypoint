@@ -1,0 +1,241 @@
+name: waypoint-local
+
+x-aws: &aws
+  AWS_REGION: ap-south-1
+  AWS_ENDPOINT_URL: http://localstack:4566
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  EVENT_BUS_NAME: waypoint
+  IDENTITY_URL: http://identity:8000
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+  ENVIRONMENT: local
+
+x-ops: &ops
+  <<: *aws
+  DATABASE_URL: postgresql+psycopg://waypoint_operations:${OPERATIONS_DB_PASSWORD:-local-operations-change-me}@db:5432/waypoint_operations
+  SERVICE_MODE: operations
+  DEMO_MODE: "true"
+  DEMO_DELIVERY_DATE: "2026-11-13"
+  UPLOAD_DIR: /tmp/uploads
+  STORAGE_BACKEND: s3
+  POD_BUCKET: waypoint-private-proofs
+  CONSUMER_QUEUE_URL: http://localstack:4566/000000000000/operations
+  PLANNING_QUEUE_URL: http://localstack:4566/000000000000/planning
+
+x-identity: &identity
+  <<: *aws
+  DATABASE_URL: postgresql+psycopg://waypoint_identity:${IDENTITY_DB_PASSWORD:-local-identity-change-me}@db:5432/waypoint_identity
+  JWT_SECRET: ${JWT_SECRET:-local-only-replace-with-at-least-32-random-characters}
+  CONSUMER_QUEUE_URL: http://localstack:4566/000000000000/identity
+
+x-network: &network
+  <<: *aws
+  DATABASE_URL: postgresql+psycopg://waypoint_network:${NETWORK_DB_PASSWORD:-local-network-change-me}@db:5432/waypoint_network
+
+x-notifications: &notifications
+  <<: *aws
+  DATABASE_URL: postgresql+psycopg://waypoint_notifications:${NOTIFICATIONS_DB_PASSWORD:-local-notifications-change-me}@db:5432/waypoint_notifications
+  CONSUMER_QUEUE_URL: http://localstack:4566/000000000000/notifications
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-admin-change-me}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-local-identity-change-me}
+      NETWORK_DB_PASSWORD: ${NETWORK_DB_PASSWORD:-local-network-change-me}
+      OPERATIONS_DB_PASSWORD: ${OPERATIONS_DB_PASSWORD:-local-operations-change-me}
+      NOTIFICATIONS_DB_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-local-notifications-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./local/databases.sh:/docker-entrypoint-initdb.d/10-contexts.sh:ro
+    ports: ["127.0.0.1:55432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  localstack:
+    image: localstack/localstack:3.8.1
+    environment:
+      SERVICES: events,sqs,s3
+      AWS_DEFAULT_REGION: ap-south-1
+      LOCALSTACK_HOST: localhost
+      SQS_ENDPOINT_STRATEGY: "off"
+      PERSISTENCE: "1"
+    ports: ["127.0.0.1:4566:4566"]
+    volumes:
+      - localstack:/var/lib/localstack
+      - ./local/aws.sh:/etc/localstack/init/ready.d/10-waypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sqs get-queue-url --queue-name planning >/dev/null && awslocal s3api head-bucket --bucket waypoint-private-proofs"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  migrate-identity:
+    build: {context: ., dockerfile: services/identity-access/Dockerfile}
+    pull_policy: build
+    image: waypoint-identity:local
+    environment: *identity
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  migrate-network:
+    build: {context: ., dockerfile: services/network-fleet/Dockerfile}
+    pull_policy: build
+    image: waypoint-network:local
+    environment: *network
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  migrate-operations:
+    build: {context: ., dockerfile: services/operations/Dockerfile}
+    pull_policy: build
+    image: waypoint-operations:local
+    environment: *ops
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  migrate-notifications:
+    build: {context: ., dockerfile: services/notifications/Dockerfile}
+    pull_policy: build
+    image: waypoint-notifications:local
+    environment: *notifications
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {db: {condition: service_healthy}}
+    healthcheck: {disable: true}
+
+  seed:
+    build: {context: ., dockerfile: local/Dockerfile}
+    environment:
+      <<: *ops
+      JWT_SECRET: ${JWT_SECRET:-local-only-replace-with-at-least-32-random-characters}
+      IDENTITY_DATABASE_URL: postgresql+psycopg://waypoint_identity:${IDENTITY_DB_PASSWORD:-local-identity-change-me}@db:5432/waypoint_identity
+      NETWORK_DATABASE_URL: postgresql+psycopg://waypoint_network:${NETWORK_DB_PASSWORD:-local-network-change-me}@db:5432/waypoint_network
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-local-role-password-change-me}
+    command: ["python", "scripts/seed/synthetic.py"]
+    depends_on:
+      migrate-identity: {condition: service_completed_successfully}
+      migrate-network: {condition: service_completed_successfully}
+      migrate-operations: {condition: service_completed_successfully}
+      migrate-notifications: {condition: service_completed_successfully}
+
+  identity:
+    stop_grace_period: 40s
+    build: {context: ., dockerfile: services/identity-access/Dockerfile}
+    pull_policy: build
+    image: waypoint-identity:local
+    environment: *identity
+    depends_on: {seed: {condition: service_completed_successfully}}
+  network:
+    stop_grace_period: 40s
+    build: {context: ., dockerfile: services/network-fleet/Dockerfile}
+    pull_policy: build
+    image: waypoint-network:local
+    environment: *network
+    depends_on: {seed: {condition: service_completed_successfully}}
+  operations:
+    stop_grace_period: 40s
+    build: {context: ., dockerfile: services/operations/Dockerfile}
+    pull_policy: build
+    image: waypoint-operations:local
+    environment: *ops
+    depends_on: {seed: {condition: service_completed_successfully}}
+  notifications:
+    stop_grace_period: 40s
+    build: {context: ., dockerfile: services/notifications/Dockerfile}
+    pull_policy: build
+    image: waypoint-notifications:local
+    environment: *notifications
+    depends_on: {seed: {condition: service_completed_successfully}}
+
+  identity-publisher:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/identity-access/Dockerfile}
+    pull_policy: build
+    image: waypoint-identity:local
+    environment: *identity
+    command: ["python", "-m", "waypoint_identity.workers.publisher"]
+    depends_on: {identity: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  network-publisher:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/network-fleet/Dockerfile}
+    pull_policy: build
+    image: waypoint-network:local
+    environment: *network
+    command: ["python", "-m", "waypoint_network.workers.publisher"]
+    depends_on: {network: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  operations-publisher:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/operations/Dockerfile}
+    pull_policy: build
+    image: waypoint-operations:local
+    environment: *ops
+    command: ["python", "-m", "app.workers.publisher"]
+    depends_on: {operations: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  operations-consumer:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/operations/Dockerfile}
+    pull_policy: build
+    image: waypoint-operations:local
+    environment: *ops
+    command: ["python", "-m", "app.workers.events"]
+    depends_on: {operations: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  identity-consumer:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/identity-access/Dockerfile}
+    pull_policy: build
+    image: waypoint-identity:local
+    environment: *identity
+    command: ["python", "-m", "waypoint_identity.workers.consumer"]
+    depends_on: {identity: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  notifications-consumer:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/notifications/Dockerfile}
+    pull_policy: build
+    image: waypoint-notifications:local
+    environment: *notifications
+    command: ["python", "-m", "waypoint_notifications.workers.consumer"]
+    depends_on: {notifications: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+  planning-worker:
+    stop_grace_period: 120s
+    build: {context: ., dockerfile: services/operations/Dockerfile}
+    pull_policy: build
+    image: waypoint-operations:local
+    environment: *ops
+    command: ["python", "-m", "app.workers.planning"]
+    depends_on: {operations: {condition: service_healthy}, localstack: {condition: service_healthy}}
+    healthcheck: {disable: true}
+
+  ingress:
+    image: nginx:1.27-alpine
+    ports: ["127.0.0.1:8000:8080"]
+    volumes: ["./local/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    depends_on:
+      identity: {condition: service_healthy}
+      network: {condition: service_healthy}
+      operations: {condition: service_healthy}
+      notifications: {condition: service_healthy}
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    environment: {VITE_API_URL: "http://localhost:8000/api/v1"}
+    ports: ["127.0.0.1:5173:5173"]
+    volumes: ["../frontend:/app", "frontend_node_modules:/app/node_modules"]
+    depends_on: [ingress]
+
+volumes:
+  pgdata:
+  localstack:
+  frontend_node_modules:

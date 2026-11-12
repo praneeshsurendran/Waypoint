@@ -1,6 +1,7 @@
+import * as notificationsApi from '@/api/endpoints/notifications'
 import type { DriverSignalsApi } from '@/types/api/driverSignals'
 import * as driverApi from '@/api/endpoints/driver'
-import type { DevicePosition } from '@/types/driverSignals'
+import type { DevicePosition, DeliveryNotice } from '@/types/driverSignals'
 
 export const PENDING_POSITIONS_KEY = 'waypoint.pendingPositions'
 
@@ -39,7 +40,9 @@ export async function sendPosition(position: DevicePosition) {
 
 export function createHttpDriverSignalsApi(): DriverSignalsApi {
   return {
-    registerPushSubscription: async () => {},
+    async registerPushSubscription(subscription) {
+      await notificationsApi.registerPushSubscription(subscription)
+    },
     async recordPosition(position: DevicePosition) {
       // Keep only the latest fix per vehicle. Send anything waiting first, then this fix.
       const waiting = readPendingPositions().filter((p) => p.vehicleId !== position.vehicleId)
@@ -56,8 +59,38 @@ export function createHttpDriverSignalsApi(): DriverSignalsApi {
     async pendingPositions() {
       return readPendingPositions()
     },
-    listNotices: async () => [],
-    acknowledgeNotice: async () => {},
-    checkDeliveryWindows: async () => {},
+    async listNotices(outletId) {
+      const rows = await notificationsApi.listNotifications()
+      const kinds: Record<string, DeliveryNotice['kind']> = {
+        'delivery.started': 'enRoute',
+        'delivery.delayed': 'deadline',
+        'delivery.failed': 'issue',
+        'stop.completed': 'arrival',
+        'proof_of_delivery.recorded': 'completed',
+        'order.deferred': 'delay',
+        'receipt.issue_reported': 'issue',
+      }
+      return rows
+        .filter((row) => !outletId || row.data.outlet_id === outletId)
+        .map((row) => ({
+          id: row.id,
+          key: row.id,
+          stopId: String(row.data.stop_id ?? ''),
+          outletId: row.data.outlet_id ?? '',
+          kind: kinds[row.type] ?? 'completed',
+          title: row.type.replaceAll('.', ' ').replaceAll('_', ' '),
+          message:
+            row.data.note ?? row.data.decision?.reason_code ?? 'Your delivery status has changed.',
+          createdAt: row.created_at,
+          readAt: row.read ? row.created_at : undefined,
+          delivery: 'sent' as const,
+        }))
+    },
+    async acknowledgeNotice(id) {
+      await notificationsApi.readNotification(id)
+    },
+    async checkDeliveryWindows() {
+      await notificationsApi.checkDeliveryWindows()
+    },
   }
 }

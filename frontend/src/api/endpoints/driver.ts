@@ -37,3 +37,7 @@ export function postDriverPositions<T = unknown>(options?: RequestInit): Promise
 export function getDriverPositionsLatest<T = unknown>(options?: RequestInit): Promise<T> {
   return request<T>('/driver/positions/latest', options)
 }
+
+export function getDriverHistory<T = unknown>(options?: RequestInit): Promise<T> {
+  return request<T>('/driver/history', options)
+}

@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-12",
+  "backend": {
+    "passed": 91,
+    "skipped": 1,
+    "warnings": 1,
+    "seconds": 44.9
+  },
+  "baseline": {
+    "passed": 60,
+    "skipped": 1,
+    "ruff_errors": 63
+  },
+  "frontend": {
+    "passed": 128,
+    "files": 16
+  },
+  "typecheck": {
+    "mypy_source_files": 22,
+    "result": "passed"
+  },
+  "performance": {
+    "outlets": 120,
+    "vehicles": 60,
+    "orders": 120,
+    "served": 79,
+    "deferred": 41,
+    "plan_seconds": 0.063,
+    "list_orders_p95_ms": 47.99,
+    "samples": 20,
+    "identity_transport": "in-process HTTP transport",
+    "database": "real PostgreSQL"
+  },
+  "queue_benchmark": {
+    "successful_jobs": 3,
+    "queue_completion_seconds": [
+      2.064,
+      2.047,
+      2.068
+    ],
+    "whole_workflows_seconds": 10.949,
+    "observed_jobs_per_minute_including_workflow_overhead": 16.44,
+    "scope": "sequential synthetic local workflows; not saturated queue throughput"
+  },
+  "browser": {
+    "browser_role_logins": [
+      {
+        "role": "dispatcher",
+        "path": "/dispatcher/orders",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "loader",
+        "path": "/loader/queue",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "driver",
+        "path": "/driver/home",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "manager",
+        "path": "/store-manager/overview",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "admin",
+        "path": "/administration/team",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      }
+    ]
+  },
+  "docker_workflow": {
+    "four_role_http_workflow": "passed",
+    "async_job": "succeeded",
+    "queue_completion_seconds": 2.095,
+    "duplicate_replay": "deduplicated",
+    "private_evidence": "authorized",
+    "notifications": 24,
+    "order_id": 129,
+    "plan_id": 9,
+    "incremental_sync_recovery": "passed",
+    "queued_departure_without_arrival": "passed",
+    "driver_history": "passed"
+  },
+  "dependency_audit": {
+    "known_vulnerabilities": 0
+  },
+  "migration": {
+    "four_independent_histories": "passed",
+    "second_upgrade": "idempotent",
+    "transfer": "dry-run/apply/rerun passed",
+    "password_and_ids": "preserved",
+    "cross_database_access": "denied",
+    "backup_restore_checksums": "matched"
+  },
+  "local_emulator": {
+    "version": "3.8.1",
+    "fanout": "passed",
+    "dlq_redrive_and_replay": "passed",
+    "private_s3_roundtrip": "passed"
+  },
+  "cloud_resources_created": false,
+  "legacy_browser_suite": {
+    "passed": 50,
+    "failed": 49,
+    "total": 99,
+    "scope": "full existing demo Playwright suite; installed Chromium, 4 workers, 10-second action timeout",
+    "representative_unchanged_head_failures": 3,
+    "baseline_passed": 50,
+    "baseline_failed": 49,
+    "shared_failures": 49,
+    "additional_case": "Initial 1440px route failure passed isolated recheck and final complete suite.",
+    "identical_failure_set": true
+  }
+}

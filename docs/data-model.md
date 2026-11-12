@@ -1,3 +1,5 @@
+> The relationships below are preserved within the operations database and its local projections. Independent identity/network/notification ownership and migrations are described in [data ownership](../backend/docs/data-ownership.md). No cross-database foreign keys were added.
+
 # Waypoint Data Model
 
 > **Note**: Outlet and depot coordinates are **synthetic** (approximate district centroids + deterministic jitter from `outlet_id`). They are used only for haversine routing in the planner. Do not use for navigation.

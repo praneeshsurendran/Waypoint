@@ -1,3 +1,5 @@
+import type { ReceiptSyncCommand } from '@/types/deliverySync'
+import type { DeliverySyncEvent } from '@/types/deliverySync'
 import type { ManagerSignOff } from '@/types/deliveryVerification'
 import type { WebPushRegistration, DevicePosition, DeliveryNotice } from '@/types/driverSignals'
 
@@ -179,6 +181,9 @@ export interface Evidence {
 export type QueueStatus = 'pending' | 'syncing' | 'accepted' | 'review' | 'retry' | 'superseded'
 
 export interface QueuedAction {
+  actorId?: number
+  event?: DeliverySyncEvent
+  receipt?: ReceiptSyncCommand
   id: string
   evidenceId: string
   stopId: string

@@ -10,3 +10,8 @@ __pycache__/
 node_modules/
 dist/
 .env
+.pytest_cache/
+.hypothesis/
+*.tsbuildinfo
+backend/.env.*.local
+backend/backups/

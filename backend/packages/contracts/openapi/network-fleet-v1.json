@@ -1,0 +1,1085 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Waypoint network-fleet",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/api/v1/reference/depots": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "List Depots",
+        "operationId": "list_depots_api_v1_reference_depots_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DepotOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Depots Api V1 Reference Depots Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reference/outlets": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "List Outlets",
+        "operationId": "list_outlets_api_v1_reference_outlets_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "depot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Depot"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Brand"
+            }
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "District"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OutletOut"
+                  },
+                  "title": "Response List Outlets Api V1 Reference Outlets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/outlets/{outlet_id}": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "Get Outlet",
+        "operationId": "get_outlet_api_v1_reference_outlets__outlet_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "outlet_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outlet Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutletOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/vehicles": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "List Vehicles",
+        "operationId": "list_vehicles_api_v1_reference_vehicles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "depot",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Depot"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "refrigerated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Refrigerated"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VehicleOut"
+                  },
+                  "title": "Response List Vehicles Api V1 Reference Vehicles Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/vehicles/{vehicle_id}": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "Get Vehicle",
+        "operationId": "get_vehicle_api_v1_reference_vehicles__vehicle_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehicle Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/calendar": {
+      "get": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "List Calendar",
+        "operationId": "list_calendar_api_v1_reference_calendar_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "operating_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Operating Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarDayOut"
+                  },
+                  "title": "Response List Calendar Api V1 Reference Calendar Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reference/vehicles/{vehicle_id}/availability": {
+      "patch": {
+        "tags": [
+          "reference"
+        ],
+        "summary": "Set Availability",
+        "operationId": "set_availability_api_v1_reference_vehicles__vehicle_id__availability_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehicle Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Availability"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/outlets": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create Outlet",
+        "operationId": "create_outlet_api_v1_admin_outlets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutletCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutletOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/vehicles": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create Vehicle",
+        "operationId": "create_vehicle_api_v1_admin_vehicles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Live",
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Availability": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "in_workshop",
+              "unavailable"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Availability"
+      },
+      "CalendarDayOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "dow": {
+            "type": "integer",
+            "title": "Dow"
+          },
+          "dow_name": {
+            "type": "string",
+            "title": "Dow Name"
+          },
+          "is_weekend": {
+            "type": "boolean",
+            "title": "Is Weekend"
+          },
+          "iso_year": {
+            "type": "integer",
+            "title": "Iso Year"
+          },
+          "iso_week": {
+            "type": "integer",
+            "title": "Iso Week"
+          },
+          "is_payday": {
+            "type": "boolean",
+            "title": "Is Payday"
+          },
+          "festival": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Festival"
+          },
+          "festival_ramp": {
+            "type": "number",
+            "title": "Festival Ramp"
+          },
+          "is_holiday": {
+            "type": "boolean",
+            "title": "Is Holiday"
+          },
+          "monsoon": {
+            "type": "boolean",
+            "title": "Monsoon"
+          },
+          "is_operating": {
+            "type": "boolean",
+            "title": "Is Operating"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "dow",
+          "dow_name",
+          "is_weekend",
+          "iso_year",
+          "iso_week",
+          "is_payday",
+          "festival_ramp",
+          "is_holiday",
+          "monsoon",
+          "is_operating"
+        ],
+        "title": "CalendarDayOut"
+      },
+      "DepotOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "DepotOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "OutletCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "brand": {
+            "type": "string",
+            "title": "Brand"
+          },
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "depot_code": {
+            "type": "string",
+            "title": "Depot Code"
+          },
+          "parking_constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parking Constraint"
+          },
+          "window_open_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Window Open Time"
+          },
+          "window_close_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Window Close Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "brand",
+          "district",
+          "depot_code",
+          "window_open_time",
+          "window_close_time"
+        ],
+        "title": "OutletCreate"
+      },
+      "OutletOut": {
+        "properties": {
+          "outlet_id": {
+            "type": "string",
+            "title": "Outlet Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "brand": {
+            "type": "string",
+            "title": "Brand"
+          },
+          "district": {
+            "type": "string",
+            "title": "District"
+          },
+          "depot_code": {
+            "type": "string",
+            "title": "Depot Code"
+          },
+          "dock_type": {
+            "type": "string",
+            "title": "Dock Type"
+          },
+          "parking_constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parking Constraint"
+          },
+          "van_only": {
+            "type": "boolean",
+            "title": "Van Only"
+          },
+          "is_mall": {
+            "type": "boolean",
+            "title": "Is Mall"
+          },
+          "mall_window_open": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mall Window Open"
+          },
+          "mall_window_close": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mall Window Close"
+          },
+          "window_open_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Open Time"
+          },
+          "window_close_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Close Time"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "outlet_id",
+          "brand",
+          "district",
+          "depot_code",
+          "dock_type",
+          "van_only",
+          "is_mall"
+        ],
+        "title": "OutletOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VehicleCreate": {
+        "properties": {
+          "brand": {
+            "type": "string",
+            "title": "Brand"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "is_refrigerated": {
+            "type": "boolean",
+            "title": "Is Refrigerated"
+          },
+          "depot_code": {
+            "type": "string",
+            "title": "Depot Code"
+          },
+          "weight_cap_kg": {
+            "type": "number",
+            "title": "Weight Cap Kg"
+          },
+          "volume_cap_m3": {
+            "type": "number",
+            "title": "Volume Cap M3"
+          },
+          "registration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "brand",
+          "type",
+          "is_refrigerated",
+          "depot_code",
+          "weight_cap_kg",
+          "volume_cap_m3"
+        ],
+        "title": "VehicleCreate"
+      },
+      "VehicleOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "available"
+          },
+          "vehicle_id": {
+            "type": "string",
+            "title": "Vehicle Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "temp": {
+            "type": "string",
+            "title": "Temp"
+          },
+          "is_refrigerated": {
+            "type": "boolean",
+            "title": "Is Refrigerated"
+          },
+          "registration": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration"
+          },
+          "weight_cap_kg": {
+            "type": "number",
+            "title": "Weight Cap Kg"
+          },
+          "volume_cap_m3": {
+            "type": "number",
+            "title": "Volume Cap M3"
+          },
+          "fuel_type": {
+            "type": "string",
+            "title": "Fuel Type"
+          },
+          "km_per_l": {
+            "type": "number",
+            "title": "Km Per L"
+          },
+          "weekly_fuel_quota_l": {
+            "type": "number",
+            "title": "Weekly Fuel Quota L"
+          },
+          "depot_code": {
+            "type": "string",
+            "title": "Depot Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "vehicle_id",
+          "type",
+          "temp",
+          "is_refrigerated",
+          "weight_cap_kg",
+          "volume_cap_m3",
+          "fuel_type",
+          "km_per_l",
+          "weekly_fuel_quota_l",
+          "depot_code"
+        ],
+        "title": "VehicleOut"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

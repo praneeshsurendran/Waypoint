@@ -1,3 +1,5 @@
+> Backend migration: see [the implemented microservices architecture](../backend/docs/architecture.md), [ownership](../backend/docs/data-ownership.md), and [compatibility map](../backend/docs/api-compatibility.md). The older diagram below describes the pre-migration backend.
+
 # Waypoint architecture
 
 Waypoint is a three-part system started by one `docker compose up`: a PostgreSQL database, a FastAPI backend

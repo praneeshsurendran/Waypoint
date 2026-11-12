@@ -119,3 +119,22 @@ describe('central HTTP transport and endpoint contracts', () => {
     expect(values.has('waypoint.lastRole')).toBe(false)
   })
 })
+
+it('authorizes private evidence only at the configured API origin', async () => {
+  const { fetchEvidenceBlob } = await import('@/api/client/assets')
+  const { BASE_URL } = await import('@/api/client/apiClient')
+  vi.stubGlobal('window', { location: { origin: 'http://frontend.example' } })
+  values.set('waypoint.token', 'private-token')
+  fetchMock.mockResolvedValueOnce(new Response(new Blob(['proof'])))
+  await fetchEvidenceBlob(`${new URL(BASE_URL).origin}/uploads/proof.jpg`)
+  expect(fetchMock.mock.calls[0][1]?.headers).toEqual({ Authorization: 'Bearer private-token' })
+})
+
+it('never forwards the bearer token to an external evidence URL', async () => {
+  const { fetchEvidenceBlob } = await import('@/api/client/assets')
+  vi.stubGlobal('window', { location: { origin: 'http://frontend.example' } })
+  values.set('waypoint.token', 'private-token')
+  fetchMock.mockResolvedValueOnce(new Response(new Blob(['proof'])))
+  await fetchEvidenceBlob('https://private-objects.example/proof?signature=temporary')
+  expect(fetchMock.mock.calls[0][1]?.headers).toBeUndefined()
+})

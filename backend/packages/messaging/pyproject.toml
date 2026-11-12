@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waypoint-messaging"
+version = "0.2.0"
+requires-python = ">=3.12"
+dependencies = ["boto3==1.35.76","waypoint-contracts==0.2.0","waypoint-observability==0.2.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["waypoint_*"]
+namespaces = true
