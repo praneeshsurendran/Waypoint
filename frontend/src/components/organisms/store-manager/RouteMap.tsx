@@ -35,12 +35,12 @@ export default function RouteMap({
   outlet: LatLngTuple
   depot: LatLngTuple
   depotName: string
-  vehicleId?: string
+  vehicleId?: string | undefined
   online: boolean
   /** Called when the vehicle marker is selected (click, tap, or Enter). */
-  onVehicleSelect?: () => void
+  onVehicleSelect?: (() => void) | undefined
   /** Drawn over the map, e.g. the vehicle details panel. */
-  overlay?: ReactNode
+  overlay?: ReactNode | undefined
 }) {
   const planned = phase !== 'pending'
   // The vehicle waits at the depot until it leaves and is at the outlet once delivered.

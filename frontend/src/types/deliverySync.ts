@@ -4,13 +4,13 @@ export interface DeliverySyncEvent {
   stop_id: number
   outcome:
     'STARTED' | 'ARRIVED' | 'DELIVERED' | 'PARTIAL' | 'FAILED' | 'REFUSED' | 'CLOSED' | 'DELAY'
-  order_id?: number
-  note?: string
-  pod_photo_path?: string | null
-  pod_signature_path?: string | null
-  receiver_name?: string | null
-  receiver_pin_ok?: boolean
-  recorded_at?: string
+  order_id?: number | undefined
+  note?: string | undefined
+  pod_photo_path?: string | null | undefined
+  pod_signature_path?: string | null | undefined
+  receiver_name?: string | null | undefined
+  receiver_pin_ok?: boolean | undefined
+  recorded_at?: string | undefined
 }
 
 export interface ReceiptSyncCommand {

@@ -8,5 +8,5 @@ export interface FeedEvent {
   title: string
   detail: string
   /** True while the store still has to do something about it. */
-  needsAction?: boolean
+  needsAction?: boolean | undefined
 }

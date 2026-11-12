@@ -15,7 +15,7 @@ export interface DeliveryNotice {
   title: string
   message: string
   createdAt: string
-  readAt?: string
+  readAt?: string | undefined
   /** Local adapter never claims cross-device delivery. */
   delivery: 'local' | 'queued' | 'sent'
 }

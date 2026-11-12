@@ -6,7 +6,7 @@ import { BackIcon } from '@/components/atoms/shellIcons'
 export interface Crumb {
   label: string
   /** Omit on the current page. */
-  to?: string
+  to?: string | undefined
 }
 
 export const BreadcrumbContext = createContext<(trail: Crumb[] | null) => void>(() => {})
@@ -39,7 +39,7 @@ export function Breadcrumbs({ home, trail }: { home: string; trail: Crumb[] | nu
   ]
   const back = () => {
     // React Router records the position in its history stack; index 0 means nothing to go back to.
-    const index = (window.history.state as { idx?: number } | null)?.idx ?? 0
+    const index = (window.history.state as { idx?: number | undefined } | null)?.idx ?? 0
     if (index > 0) navigate(-1)
     else navigate(home)
   }

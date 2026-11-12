@@ -1,3 +1,4 @@
+import { retryRead, retryDelay } from '@/queries/polling'
 import { getToken, authChangedEvent } from '@/infrastructure/storage/authSession'
 import { useEffect, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,7 +28,13 @@ const apis = createSwitchableApis(service)
 service.setApis(apis)
 const client = new QueryClient({
   defaultOptions: {
-    queries: { networkMode: 'always', retry: 1, refetchOnWindowFocus: true },
+    queries: {
+      networkMode: 'always',
+      retry: retryRead,
+      retryDelay,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
     mutations: { networkMode: 'always', retry: false },
   },
 })

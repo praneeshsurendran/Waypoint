@@ -1,3 +1,4 @@
+import { userProfile } from '@/api/generated/identity.mjs'
 import type { ApiUserProfile } from '@/types/api/reference'
 
 export function getToken(): string | null {
@@ -33,7 +34,8 @@ export function clearToken(): void {
 export function getUser(): ApiUserProfile | null {
   try {
     const raw = localStorage.getItem('waypoint.user')
-    return raw ? JSON.parse(raw) : null
+    const value: unknown = raw ? JSON.parse(raw) : null
+    return userProfile(value) ? value : null
   } catch {
     return null
   }

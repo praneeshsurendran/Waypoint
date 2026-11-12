@@ -38,7 +38,7 @@ export function formatLongDate(date: Date | string) {
 /** "26 Sep" */
 export function formatShortDate(date: Date | string) {
   const p = parts(date, { day: 'numeric', month: 'long' })
-  return `${p.day} ${p.month.slice(0, 3)}`
+  return `${p.day} ${(p.month ?? '').slice(0, 3)}`
 }
 
 /** "05:41" */
@@ -52,7 +52,7 @@ export const formatWeekday = (date: Date | string) => parts(date, { weekday: 'lo
 
 /** Minutes from `now` until today's cutoff (negative once it has passed). */
 export function minutesToCutoff(now: Date) {
-  const [hours, minutes] = formatClock(now).split(':').map(Number)
-  const [cutoffHours, cutoffMinutes] = CUTOFF.split(':').map(Number)
+  const [hours = Number.NaN, minutes = Number.NaN] = formatClock(now).split(':').map(Number)
+  const [cutoffHours = Number.NaN, cutoffMinutes = Number.NaN] = CUTOFF.split(':').map(Number)
   return cutoffHours * 60 + cutoffMinutes - (hours * 60 + minutes)
 }

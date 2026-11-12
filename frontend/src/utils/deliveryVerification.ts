@@ -8,9 +8,10 @@ export function hasSignatureInk(strokes: SignatureStroke[]) {
   for (const stroke of strokes) {
     for (let index = 0; index < stroke.length; index++) {
       const point = stroke[index]
+      if (!point) return false
+      const previous = stroke[index - 1]
       if (![point.x, point.y].every((n) => Number.isFinite(n) && n >= 0 && n <= 1)) return false
-      if (index)
-        distance += Math.hypot(point.x - stroke[index - 1].x, point.y - stroke[index - 1].y)
+      if (previous) distance += Math.hypot(point.x - previous.x, point.y - previous.y)
     }
   }
   return distance >= 0.15

@@ -1,3 +1,4 @@
+import { identityKey, nextPoll } from '@/queries/polling'
 import { useQuery } from '@tanstack/react-query'
 import type { Apis } from '@/types/api'
 import { useApis } from '@/app/providers/ApisContext'
@@ -11,8 +12,10 @@ import { snapshotKey } from '@/queries/useOperations'
 export function useApiQuery<T>(key: readonly unknown[], read: (apis: Apis) => Promise<T>) {
   const apis = useApis()
   return useQuery({
-    queryKey: [...snapshotKey, 'api', ...key],
+    queryKey: [...snapshotKey, 'api', ...identityKey(), ...key],
     queryFn: () => read(apis),
     networkMode: 'always',
+    refetchInterval: (query) => nextPoll(query.state.fetchFailureCount, query.state.error),
+    refetchIntervalInBackground: false,
   })
 }

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
+from waypoint_contracts.common import ContractModel as BaseModel
 
 
 class PositionIn(BaseModel):

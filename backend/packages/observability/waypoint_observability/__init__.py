@@ -1,5 +1,9 @@
 """Request correlation without logging credentials or request payloads."""
 
+from fastapi import FastAPI, Request
+from starlette.responses import Response
+from starlette.middleware.base import RequestResponseEndpoint
+
 import json
 import logging
 import re
@@ -8,11 +12,14 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from uuid import uuid4
 
-traceparent = ContextVar("traceparent", default=None)
-correlation_id = ContextVar("correlation_id", default="background")
+traceparent: ContextVar[str | None] = ContextVar("traceparent", default=None)
+correlation_id: ContextVar[str] = ContextVar("correlation_id", default="background")
 
 
-def install(app):
+def install(app: FastAPI) -> None:
+    from waypoint_runtime import install as protect
+
+    protect(app)
     logger = logging.getLogger("waypoint.http")
     if not logger.handlers:
         handler = logging.StreamHandler()
@@ -22,7 +29,9 @@ def install(app):
     logger.propagate = False
 
     @app.middleware("http")
-    async def correlate(request, call_next):
+    async def correlate(
+        request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         candidate = request.headers.get("x-correlation-id", "")
         value = (
             candidate

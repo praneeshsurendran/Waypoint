@@ -10,8 +10,8 @@ export function Card({
   className = '',
 }: {
   children: ReactNode
-  label?: string
-  className?: string
+  label?: string | undefined
+  className?: string | undefined
 }) {
   return (
     <section className={`ad-card ${className}`} aria-label={label}>
@@ -26,7 +26,7 @@ export const CardLabel = ({ children }: { children: ReactNode }) => (
 
 export type Tone = 'green' | 'orange' | 'red' | 'amber' | 'grey'
 
-export function Pill({ tone, children }: { tone?: Tone; children: ReactNode }) {
+export function Pill({ tone, children }: { tone?: Tone | undefined; children: ReactNode }) {
   return (
     <span className="ad-pill">
       {tone && <i className={`ad-dot ad-dot-${tone}`} aria-hidden="true" />}
@@ -47,7 +47,10 @@ export function Btn({
   small,
   className,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; small?: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: Variant | undefined
+  small?: boolean | undefined
+}) {
   return <button type="button" className={classes(variant, small, className)} {...props} />
 }
 
@@ -56,11 +59,11 @@ export function LinkBtn({
   small,
   className,
   ...props
-}: LinkProps & { variant?: Variant; small?: boolean }) {
+}: LinkProps & { variant?: Variant | undefined; small?: boolean | undefined }) {
   return <Link className={classes(variant, small, className)} {...props} />
 }
 
-export function Avatar({ text, size = 40 }: { text: string; size?: number }) {
+export function Avatar({ text, size = 40 }: { text: string; size?: number | undefined }) {
   return (
     <span className="ad-avatar" style={{ width: size, height: size, fontSize: size * 0.34 }}>
       {text}

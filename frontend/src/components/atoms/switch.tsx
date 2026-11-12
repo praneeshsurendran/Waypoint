@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn } from 'cn'
+import { cn } from '@/utils/cn'
 import { Switch as SwitchPrimitive } from 'radix-ui'
 
 function Switch({
@@ -7,7 +7,7 @@ function Switch({
   size = 'default',
   ...props
 }: React.ComponentProps<typeof SwitchPrimitive.Root> & {
-  size?: 'sm' | 'default'
+  size?: 'sm' | 'default' | undefined
 }) {
   return (
     <SwitchPrimitive.Root

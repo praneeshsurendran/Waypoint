@@ -5,6 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from app.infrastructure.db.models.plan import Trip
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
     from app.infrastructure.db.models.deferral import Deferral
     from app.infrastructure.db.models.delivery import DeliveryEvent
     from app.infrastructure.db.models.issue import Issue
@@ -28,7 +33,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, query_expression
 
 from app.infrastructure.db.base import Base
 
@@ -50,6 +55,7 @@ TEMP_CLASSES = ("AMBIENT", "CHILLED", "FROZEN")
 
 
 class Order(Base):
+    departed_at: Mapped[Optional[dt.datetime]] = query_expression()
     __tablename__ = "orders"
     __table_args__ = (
         CheckConstraint(
@@ -94,17 +100,17 @@ class Order(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    outlet_rel: Mapped["Outlet"] = relationship("Outlet", back_populates="orders")  # type: ignore[name-defined]
+    outlet_rel: Mapped["Outlet"] = relationship("Outlet", back_populates="orders")
     lines: Mapped[list["OrderLine"]] = relationship(
         "OrderLine", back_populates="order", cascade="all, delete-orphan"
     )
-    stop_orders: Mapped[list["StopOrder"]] = relationship("StopOrder", back_populates="order_rel")  # type: ignore[name-defined]
+    stop_orders: Mapped[list["StopOrder"]] = relationship("StopOrder", back_populates="order_rel")
     delivery_events: Mapped[list["DeliveryEvent"]] = relationship(
         "DeliveryEvent", back_populates="order_rel"
-    )  # type: ignore[name-defined]
-    receipts: Mapped[list["Receipt"]] = relationship("Receipt", back_populates="order_rel")  # type: ignore[name-defined]
-    issues: Mapped[list["Issue"]] = relationship("Issue", back_populates="order_rel")  # type: ignore[name-defined]
-    deferrals: Mapped[list["Deferral"]] = relationship("Deferral", back_populates="order_rel")  # type: ignore[name-defined]
+    )
+    receipts: Mapped[list["Receipt"]] = relationship("Receipt", back_populates="order_rel")
+    issues: Mapped[list["Issue"]] = relationship("Issue", back_populates="order_rel")
+    deferrals: Mapped[list["Deferral"]] = relationship("Deferral", back_populates="order_rel")
 
     @property
     def window_open(self) -> Optional[str]:
@@ -119,7 +125,7 @@ class Order(Base):
         return None
 
     @property
-    def _current_trip(self):
+    def _current_trip(self) -> "Trip | None":
         """The trip on the newest plan that holds this order.
 
         An order can still sit on the stops of superseded plans. Only a live plan

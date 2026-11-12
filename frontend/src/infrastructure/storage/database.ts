@@ -9,7 +9,7 @@ export class WaypointDatabase extends Dexie {
   evidence!: Table<Evidence, string>
   queue!: Table<QueuedAction, string>
   httpRoutes!: Table<{ actorId: number; route: RouteState }, number>
-  httpRouteHistory!: Table<RouteEvent & { actorId?: number }, string>
+  httpRouteHistory!: Table<RouteEvent & { actorId?: number | undefined }, string>
   driverProofDrafts!: Table<DriverProofDraft, string>
   constructor(name = 'waypoint-operations-v1') {
     super(name)

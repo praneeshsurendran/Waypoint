@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session, sessionmaker
+from waypoint_messaging import EventPublisher
 import json
 from sqlalchemy import event, select
 from waypoint_contracts.events import EventEnvelope
@@ -18,9 +20,9 @@ OWNERS = (
 )
 
 
-def install(factory):
+def install(factory: sessionmaker[Session]) -> None:
     @event.listens_for(factory, "before_flush")
-    def collect(session, *_):
+    def collect(session: Session, *_: object) -> None:
         changed = [
             obj
             for obj in set(session.new) | set(session.dirty)
@@ -30,12 +32,25 @@ def install(factory):
                 or session.is_modified(obj, include_collections=False)
             )
         ]
+        if changed:
+            session.info["reference_cache_dirty"] = True
         for obj in changed:
             obj.revision = (obj.revision or 0) + 1
         session.info.setdefault("owner_changes", []).extend(changed)
 
+    @event.listens_for(factory, "after_commit")
+    def invalidate_cache(session: Session) -> None:
+        if session.info.pop("reference_cache_dirty", False):
+            from waypoint_network.infrastructure.cache import reference_cache
+
+            reference_cache().invalidate()
+
+    @event.listens_for(factory, "after_rollback")
+    def rolled_back(session: Session) -> None:
+        session.info.pop("reference_cache_dirty", None)
+
     @event.listens_for(factory, "after_flush_postexec")
-    def enqueue(session, *_):
+    def enqueue(session: Session, *_: object) -> None:
         for obj in session.info.pop("owner_changes", []):
             data = {
                 column.key: getattr(obj, column.key)
@@ -65,7 +80,9 @@ def install(factory):
             )
 
 
-def publish_pending(factory, publisher, limit=50):
+def publish_pending(
+    factory: sessionmaker[Session], publisher: EventPublisher, limit: int = 50
+) -> int:
     sent = 0
     for _ in range(limit):
         with factory.begin() as db:

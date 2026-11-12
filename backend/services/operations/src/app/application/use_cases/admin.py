@@ -1,13 +1,23 @@
 """Admin router — clock control, events poll, capacity forecast, analytics."""
 
 from __future__ import annotations
-import datetime as dt
+
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.runtime import (
+    CapacityForecast,
+    ClockResult,
+    DailySummary,
+    EventPage,
+    FuelSummary,
+)
+from waypoint_contracts.runtime import ClockAdvanceRequest
+
+import datetime as dt
 from fastapi import HTTPException, status
-from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.core import clock
 from app.infrastructure.db.models.audit import AuditLog
 from app.infrastructure.db.models.deferral import Deferral
@@ -19,11 +29,9 @@ from app.infrastructure.db.models.reference import CalendarDay, Vehicle, Vehicle
 _DISPATCHER = None
 
 
-class ClockAdvanceRequest(BaseModel):
-    business_date: str
-
-
-def advance_clock(body: ClockAdvanceRequest, current_user: CurrentUser, _: None = _DISPATCHER):
+def advance_clock(
+    body: ClockAdvanceRequest, current_user: CurrentUser, _: None = _DISPATCHER
+) -> ClockResult:
     """Advance the business date for demo purposes."""
     try:
         dt.date.fromisoformat(body.business_date)
@@ -39,16 +47,20 @@ def advance_clock(body: ClockAdvanceRequest, current_user: CurrentUser, _: None 
             403, detail={"code": "DEMO_DISABLED", "message": "Demo clock is disabled."}
         )
     clock.advance_business_date(body.business_date)
-    return {"business_date": body.business_date, "now": clock.now().isoformat()}
+    return TypeAdapter(ClockResult).validate_python(
+        {"business_date": body.business_date, "now": clock.now().isoformat()}
+    )
 
 
-def get_clock(current_user: CurrentUser, _: None = _DISPATCHER):
-    return {
-        "business_date": str(clock.today()),
-        "now": clock.now().isoformat(),
-        "delivery_date": str(clock.delivery_date()),
-        "past_cutoff": clock.is_past_cutoff(),
-    }
+def get_clock(current_user: CurrentUser, _: None = _DISPATCHER) -> ClockResult:
+    return TypeAdapter(ClockResult).validate_python(
+        {
+            "business_date": str(clock.today()),
+            "now": clock.now().isoformat(),
+            "delivery_date": str(clock.delivery_date()),
+            "past_cutoff": clock.is_past_cutoff(),
+        }
+    )
 
 
 def poll_events(
@@ -57,31 +69,36 @@ def poll_events(
     _: None = _DISPATCHER,
     since: Optional[dt.datetime] = None,
     limit: int = 50,
-):
+    cursor: int | None = None,
+) -> EventPage:
     """Returns recent audit events. Used by the dispatcher monitor for live updates."""
-    q = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit)
-    if since:
-        q = (
-            db.query(AuditLog)
-            .filter(AuditLog.created_at > since)
-            .order_by(AuditLog.created_at.desc())
-            .limit(limit)
+    q = db.query(AuditLog)
+    if cursor is not None:
+        # Monotonic ID avoids losing simultaneous events and bounded pages drain oldest first.
+        entries = q.filter(AuditLog.id > cursor).order_by(AuditLog.id).limit(limit).all()
+    else:
+        if since:
+            q = q.filter(AuditLog.created_at > since)
+        entries = list(
+            reversed(q.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(limit).all())
         )
-    entries = q.all()
-    return {
-        "events": [
-            {
-                "id": e.id,
-                "action": e.action,
-                "entity_type": e.entity_type,
-                "entity_id": e.entity_id,
-                "after": e.after_json,
-                "created_at": e.created_at.isoformat(),
-            }
-            for e in reversed(entries)
-        ],
-        "count": len(entries),
-    }
+    return TypeAdapter(EventPage).validate_python(
+        {
+            "events": [
+                {
+                    "id": e.id,
+                    "action": e.action,
+                    "entity_type": e.entity_type,
+                    "entity_id": e.entity_id,
+                    "after": e.after_json,
+                    "created_at": e.created_at.isoformat(),
+                }
+                for e in entries
+            ],
+            "count": len(entries),
+            "next_cursor": max((entry.id for entry in entries), default=cursor),
+        }
+    )
 
 
 def capacity_forecast(
@@ -89,7 +106,7 @@ def capacity_forecast(
     current_user: CurrentUser,
     _: None = _DISPATCHER,
     date: Optional[dt.date] = None,
-):
+) -> CapacityForecast:
     """
     Demand vs fleet capacity summary for the given date.
     Breakdown by depot, temperature class, and vehicle type.
@@ -160,47 +177,49 @@ def capacity_forecast(
     def _pct(num: float, den: float) -> Optional[float]:
         return round(100 * num / den, 1) if den > 0 else None
 
-    return {
-        "date": str(target_date),
-        "calendar": {
-            "is_operating": cal.is_operating if cal else None,
-            "is_payday": cal.is_payday if cal else None,
-            "festival": cal.festival if cal else None,
-            "festival_ramp": cal.festival_ramp if cal else None,
-            "is_monsoon": cal.monsoon if cal else None,
-        },
-        "demand": {
-            "orders": len(orders),
-            "total_weight_kg": round(total_demand_w, 1),
-            "total_volume_m3": round(total_demand_v, 2),
-            "chilled_weight_kg": round(chilled_demand_w, 1),
-            "chilled_volume_m3": round(chilled_demand_v, 2),
-            "orders_deferred": deferred_count,
-        },
-        "fleet": {
-            "total_weight_kg": round(total_fleet_w, 1),
-            "total_volume_m3": round(total_fleet_v, 2),
-            "reefer_weight_kg": round(total_reefer_w, 1),
-            "reefer_volume_m3": round(total_reefer_v, 2),
-        },
-        "utilisation": {
-            "weight_pct": _pct(total_demand_w, total_fleet_w),
-            "volume_pct": _pct(total_demand_v, total_fleet_v),
-            "reefer_weight_pct": _pct(chilled_demand_w, total_reefer_w),
-            "reefer_volume_pct": _pct(chilled_demand_v, total_reefer_v),
-        },
-        "depots": {
-            depot: {
-                "capacity_weight_kg": round(cap["weight_kg"], 1),
-                "capacity_volume_m3": round(cap["volume_m3"], 2),
-                "reefer_weight_kg": round(cap["reefer_weight_kg"], 1),
-                "reefer_volume_m3": round(cap["reefer_volume_m3"], 2),
-                "vehicles_total": cap["vehicles_total"],
-                "vehicles_fuel_ok": cap["vehicles_fuel_ok"],
-            }
-            for depot, cap in depot_caps.items()
-        },
-    }
+    return TypeAdapter(CapacityForecast).validate_python(
+        {
+            "date": str(target_date),
+            "calendar": {
+                "is_operating": cal.is_operating if cal else None,
+                "is_payday": cal.is_payday if cal else None,
+                "festival": cal.festival if cal else None,
+                "festival_ramp": cal.festival_ramp if cal else None,
+                "is_monsoon": cal.monsoon if cal else None,
+            },
+            "demand": {
+                "orders": len(orders),
+                "total_weight_kg": round(total_demand_w, 1),
+                "total_volume_m3": round(total_demand_v, 2),
+                "chilled_weight_kg": round(chilled_demand_w, 1),
+                "chilled_volume_m3": round(chilled_demand_v, 2),
+                "orders_deferred": deferred_count,
+            },
+            "fleet": {
+                "total_weight_kg": round(total_fleet_w, 1),
+                "total_volume_m3": round(total_fleet_v, 2),
+                "reefer_weight_kg": round(total_reefer_w, 1),
+                "reefer_volume_m3": round(total_reefer_v, 2),
+            },
+            "utilisation": {
+                "weight_pct": _pct(total_demand_w, total_fleet_w),
+                "volume_pct": _pct(total_demand_v, total_fleet_v),
+                "reefer_weight_pct": _pct(chilled_demand_w, total_reefer_w),
+                "reefer_volume_pct": _pct(chilled_demand_v, total_reefer_v),
+            },
+            "depots": {
+                depot: {
+                    "capacity_weight_kg": round(cap["weight_kg"], 1),
+                    "capacity_volume_m3": round(cap["volume_m3"], 2),
+                    "reefer_weight_kg": round(cap["reefer_weight_kg"], 1),
+                    "reefer_volume_m3": round(cap["reefer_volume_m3"], 2),
+                    "vehicles_total": cap["vehicles_total"],
+                    "vehicles_fuel_ok": cap["vehicles_fuel_ok"],
+                }
+                for depot, cap in depot_caps.items()
+            },
+        }
+    )
 
 
 def daily_summary(
@@ -208,50 +227,50 @@ def daily_summary(
     current_user: CurrentUser,
     _: None = _DISPATCHER,
     date: Optional[dt.date] = None,
-):
+) -> DailySummary:
     """Summary of delivery performance for a completed day."""
     target_date = date or clock.today()
     from app.infrastructure.db.models.plan import Stop
 
-    orders = db.query(Order).filter(Order.delivery_date == target_date).all()
-    status_counts: dict[str, int] = {}
-    for o in orders:
-        status_counts[o.status] = status_counts.get(o.status, 0) + 1
-    trips = (
-        db.query(Trip)
+    status_counts = {
+        status: count
+        for status, count in db.query(Order.status, func.count(Order.id))
+        .filter(Order.delivery_date == target_date)
+        .group_by(Order.status)
+    }
+    trip_status = {
+        status: count
+        for status, count in db.query(Trip.status, func.count(Trip.id))
         .join(Plan, Trip.plan_id == Plan.id)
         .filter(Plan.delivery_date == target_date)
-        .all()
-    )
-    trip_status: dict[str, int] = {}
-    for t in trips:
-        trip_status[t.status] = trip_status.get(t.status, 0) + 1
-    stops_q = (
-        db.query(Stop)
+        .group_by(Trip.status)
+    }
+    stop_status = {
+        status: count
+        for status, count in db.query(Stop.status, func.count(Stop.id))
         .join(Trip, Stop.trip_id == Trip.id)
         .join(Plan, Trip.plan_id == Plan.id)
         .filter(Plan.delivery_date == target_date)
-        .all()
-    )
-    stop_status: dict[str, int] = {}
-    for s in stops_q:
-        stop_status[s.status] = stop_status.get(s.status, 0) + 1
-    return {
-        "date": str(target_date),
-        "orders": {
-            "total": len(orders),
-            "by_status": status_counts,
-            "delivered": status_counts.get("DELIVERED", 0) + status_counts.get("PARTIAL", 0),
-            "failed": status_counts.get("FAILED", 0),
-            "deferred": status_counts.get("DEFERRED", 0),
-        },
-        "trips": {
-            "total": len(trips),
-            "by_status": trip_status,
-            "completed": trip_status.get("COMPLETED", 0),
-        },
-        "stops": {"total": len(stops_q), "by_status": stop_status},
+        .group_by(Stop.status)
     }
+    return TypeAdapter(DailySummary).validate_python(
+        {
+            "date": str(target_date),
+            "orders": {
+                "total": sum(status_counts.values()),
+                "by_status": status_counts,
+                "delivered": status_counts.get("DELIVERED", 0) + status_counts.get("PARTIAL", 0),
+                "failed": status_counts.get("FAILED", 0),
+                "deferred": status_counts.get("DEFERRED", 0),
+            },
+            "trips": {
+                "total": sum(trip_status.values()),
+                "by_status": trip_status,
+                "completed": trip_status.get("COMPLETED", 0),
+            },
+            "stops": {"total": sum(stop_status.values()), "by_status": stop_status},
+        }
+    )
 
 
 def fuel_summary(
@@ -260,7 +279,7 @@ def fuel_summary(
     _: None = _DISPATCHER,
     iso_year: Optional[int] = None,
     iso_week: Optional[int] = None,
-):
+) -> FuelSummary:
     """Per-vehicle fuel usage vs quota for the specified ISO week."""
     cal = db.get(CalendarDay, clock.today())
     year = iso_year or (cal.iso_year if cal else dt.date.today().isocalendar()[0])
@@ -290,4 +309,6 @@ def fuel_summary(
                 "near_limit": used >= v.weekly_fuel_quota_l * 0.8,
             }
         )
-    return {"iso_year": year, "iso_week": week, "vehicles": result}
+    return TypeAdapter(FuelSummary).validate_python(
+        {"iso_year": year, "iso_week": week, "vehicles": result}
+    )

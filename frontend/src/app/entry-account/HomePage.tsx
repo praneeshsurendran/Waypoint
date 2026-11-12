@@ -198,6 +198,7 @@ function Welcome() {
         <div className="entry-role-grid">
           {stories.map((role, index) => {
             const story = roleStories[role.key]
+            if (!story) return null
             return (
               <Reveal key={role.key} delay={(index % 2) * 0.1} className="entry-cell">
                 <Link to={role.home} className="entry-role-card entry-role-story">

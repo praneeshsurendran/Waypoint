@@ -1,6 +1,6 @@
 /** Shell icons drawn after the design's header assets. Colours follow `currentColor` / props. */
 
-export function BrandMark({ size = 28 }: { size?: number }) {
+export function BrandMark({ size = 28 }: { size?: number | undefined }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" fill="none" aria-hidden="true">
       <path
@@ -18,7 +18,7 @@ export function BrandMark({ size = 28 }: { size?: number }) {
   )
 }
 
-export function BellIcon({ size = 20 }: { size?: number }) {
+export function BellIcon({ size = 20 }: { size?: number | undefined }) {
   return (
     <svg width={size} height={size} viewBox="14 13 16 18" fill="none" aria-hidden="true">
       <path
@@ -32,7 +32,7 @@ export function BellIcon({ size = 20 }: { size?: number }) {
   )
 }
 
-export function ProfileIcon({ size = 20 }: { size?: number }) {
+export function ProfileIcon({ size = 20 }: { size?: number | undefined }) {
   return (
     <svg width={size} height={size} viewBox="14 14 16 18" fill="none" aria-hidden="true">
       <path
@@ -53,7 +53,7 @@ export function ProfileIcon({ size = 20 }: { size?: number }) {
   )
 }
 
-export function BackIcon({ size = 16 }: { size?: number }) {
+export function BackIcon({ size = 16 }: { size?: number | undefined }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path

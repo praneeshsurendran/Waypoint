@@ -20,6 +20,12 @@ async function publish(page: Page) {
   await page.getByRole('button', { name: 'Confirm allocation review', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Publish plan', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: 'Publish plan', exact: true }).click()
+  await expect(
+    page.getByText('Plan published. Loading proof is still required for departure.', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await page.goto('/dispatcher/release')
   await expect(page.getByRole('heading', { name: 'Plan published', exact: true })).toBeVisible()
 }
 
@@ -89,7 +95,10 @@ for (const [width, height] of [
     const links = page.locator('.loader-queue-row a')
     await expect.poll(() => links.count()).toBeGreaterThan(1)
     await screenshot(page, info, 'queue')
-    await page.locator('a[href="/loader/loading/LOAD055-1"]').click()
+    await page
+      .locator('a[href="/loader/loading/LOAD055-1"]')
+      .filter({ hasText: 'Open load' })
+      .click()
     await expect(
       page.getByRole('heading', { name: 'Loading workspace', exact: true }),
     ).toBeVisible()

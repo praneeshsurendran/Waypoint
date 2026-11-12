@@ -1,5 +1,7 @@
 """One job transaction per run; crash rolls back plan and job state together."""
 
+from waypoint_contracts.events import EventEnvelope
+
 import os
 from fastapi import HTTPException
 from app.infrastructure.db.session import SessionLocal
@@ -10,7 +12,7 @@ from waypoint_messaging import SQSQueue
 from waypoint_messaging.worker import consume
 
 
-def handle(event):
+def handle(event: EventEnvelope) -> None:
     if event.event_type != "planning.job_requested" or event.source != "operations":
         raise ValueError("invalid planning command")
     from app.infrastructure.db.unit_of_work import OperationsUnitOfWork
@@ -22,6 +24,8 @@ def handle(event):
             raise ValueError("unknown planning job")
         lock_run(db, job.delivery_date)
         job = uow.jobs.get(job.id, for_update=True)
+        if job is None:
+            raise ValueError("planning job disappeared before execution")
         if job.status in ("cancelled", "succeeded", "failed"):
             return
         user = db.get(User, job.requested_by)
@@ -41,11 +45,15 @@ def handle(event):
                 job.status = "succeeded"
         except HTTPException as exc:
             job.status = "failed"
-            job.error_code = exc.detail["code"]
+            job.error_code = (
+                str(exc.detail.get("code", "PLANNING_FAILED"))
+                if isinstance(exc.detail, dict)
+                else "PLANNING_FAILED"
+            )
         uow.jobs.save(job)
 
 
-def run_isolated(event):
+def run_isolated(event: EventEnvelope) -> None:
     import subprocess
     import sys
 

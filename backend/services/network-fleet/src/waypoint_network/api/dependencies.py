@@ -1,3 +1,4 @@
+from fastapi.params import Depends as Dependency
 from typing import Annotated
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,8 +9,8 @@ DbDep = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[Principal, Depends(verified_principal)]
 
 
-def require_role(*roles):
-    def check(user: CurrentUser):
+def require_role(*roles: str) -> Dependency:
+    def check(user: CurrentUser) -> Principal:
         if user.role not in roles:
             raise HTTPException(
                 403, detail={"code": "FORBIDDEN", "message": "Role not permitted."}

@@ -71,10 +71,10 @@ export function BellFilledIcon({ active }: { active: boolean }) {
 }
 
 /** The green parcel mark beside "Fresh · Chilled" and "Fresh · Dry". */
-export function ParcelIcon({ size = 20 }: { size?: number }) {
+export function ParcelIcon({ size = 20 }: { size?: number | undefined }) {
   return <Package size={size} color="#1E8A57" strokeWidth={1.5} aria-hidden="true" />
 }
-export function AlertIcon({ tone = 'warning' }: { tone?: 'warning' | 'danger' }) {
+export function AlertIcon({ tone = 'warning' }: { tone?: 'warning' | 'danger' | undefined }) {
   return (
     <AlertTriangle
       size={20}

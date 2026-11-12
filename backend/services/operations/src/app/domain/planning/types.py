@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import datetime as dt
 from dataclasses import dataclass, field
 from typing import Optional

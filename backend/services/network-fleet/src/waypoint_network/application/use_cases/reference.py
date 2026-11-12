@@ -1,8 +1,13 @@
 """Reference data router: outlets, vehicles, depots, calendar."""
 
 from __future__ import annotations
-import datetime as dt
+
+from waypoint_contracts.reference import VehicleAvailability
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.reference import CalendarDayOut, DepotOut, OutletOut, VehicleOut
+
+import datetime as dt
 
 from sqlalchemy.orm import Session as DbDep
 from waypoint_security import Principal as CurrentUser
@@ -14,8 +19,8 @@ from waypoint_network.infrastructure.db.reference import (
 )
 
 
-def list_depots(db: DbDep, _: CurrentUser):
-    return db.query(Depot).all()
+def list_depots(db: DbDep, _: CurrentUser) -> list[DepotOut]:
+    return TypeAdapter(list[DepotOut]).validate_python(db.query(Depot).all())
 
 
 def list_outlets(
@@ -24,7 +29,7 @@ def list_outlets(
     depot: Optional[str] = None,
     brand: Optional[str] = None,
     district: Optional[str] = None,
-):
+) -> list[OutletOut]:
     q = db.query(Outlet)
     if depot:
         q = q.filter(Outlet.depot_code == depot)
@@ -32,10 +37,10 @@ def list_outlets(
         q = q.filter(Outlet.brand == brand)
     if district:
         q = q.filter(Outlet.district == district)
-    return q.all()
+    return TypeAdapter(list[OutletOut]).validate_python(q.all())
 
 
-def get_outlet(outlet_id: str, db: DbDep, _: CurrentUser):
+def get_outlet(outlet_id: str, db: DbDep, _: CurrentUser) -> OutletOut:
     outlet = db.get(Outlet, outlet_id)
     if not outlet:
         from fastapi import HTTPException, status
@@ -44,7 +49,7 @@ def get_outlet(outlet_id: str, db: DbDep, _: CurrentUser):
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "NOT_FOUND", "message": "Outlet not found."},
         )
-    return outlet
+    return TypeAdapter(OutletOut).validate_python(outlet)
 
 
 def list_vehicles(
@@ -53,7 +58,7 @@ def list_vehicles(
     depot: Optional[str] = None,
     type: Optional[str] = None,
     refrigerated: Optional[bool] = None,
-):
+) -> list[VehicleOut]:
     q = db.query(Vehicle)
     if depot:
         q = q.filter(Vehicle.depot_code == depot)
@@ -61,10 +66,10 @@ def list_vehicles(
         q = q.filter(Vehicle.type == type)
     if refrigerated is not None:
         q = q.filter(Vehicle.is_refrigerated == refrigerated)
-    return q.all()
+    return TypeAdapter(list[VehicleOut]).validate_python(q.all())
 
 
-def get_vehicle(vehicle_id: str, db: DbDep, _: CurrentUser):
+def get_vehicle(vehicle_id: str, db: DbDep, _: CurrentUser) -> VehicleOut:
     vehicle = db.get(Vehicle, vehicle_id)
     if not vehicle:
         from fastapi import HTTPException, status
@@ -73,7 +78,7 @@ def get_vehicle(vehicle_id: str, db: DbDep, _: CurrentUser):
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "NOT_FOUND", "message": "Vehicle not found."},
         )
-    return vehicle
+    return TypeAdapter(VehicleOut).validate_python(vehicle)
 
 
 def list_calendar(
@@ -82,7 +87,7 @@ def list_calendar(
     from_: Optional[dt.date] = None,
     to: Optional[dt.date] = None,
     operating_only: bool = False,
-):
+) -> list[CalendarDayOut]:
     q = db.query(CalendarDay)
     if from_:
         q = q.filter(CalendarDay.date >= from_)
@@ -90,10 +95,14 @@ def list_calendar(
         q = q.filter(CalendarDay.date <= to)
     if operating_only:
         q = q.filter(CalendarDay.is_operating.is_(True))
-    return q.order_by(CalendarDay.date).all()
+    return TypeAdapter(list[CalendarDayOut]).validate_python(
+        q.order_by(CalendarDay.date).all()
+    )
 
 
-def set_availability(vehicle_id, body, db, user):
+def set_availability(
+    vehicle_id: str, body: VehicleAvailability, db: DbDep, user: CurrentUser
+) -> VehicleOut:
     from fastapi import HTTPException
     from waypoint_network.infrastructure.db.audit import log_action
 
@@ -127,4 +136,4 @@ def set_availability(vehicle_id, body, db, user):
     )
     db.commit()
     db.refresh(vehicle)
-    return vehicle
+    return TypeAdapter(VehicleOut).validate_python(vehicle)

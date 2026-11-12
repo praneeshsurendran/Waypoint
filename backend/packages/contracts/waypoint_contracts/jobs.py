@@ -1,6 +1,7 @@
 import datetime as dt
 import uuid
-from pydantic import BaseModel, Field
+from pydantic import Field
+from waypoint_contracts.common import ContractModel as BaseModel
 
 
 class JobRequest(BaseModel):

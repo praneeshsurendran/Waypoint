@@ -5,7 +5,7 @@ from waypoint_identity.infrastructure.db.models import Inbox, ProjectionVersion
 from waypoint_identity.infrastructure.db.projections import Depot, Outlet, Vehicle, Trip
 
 
-def handle(event: EventEnvelope):
+def handle(event: EventEnvelope) -> None:
     digest = event.fingerprint()
     with SessionLocal.begin() as db:
         accepted = db.execute(
@@ -16,7 +16,7 @@ def handle(event: EventEnvelope):
         ).scalar_one_or_none()
         if not accepted:
             existing = db.get(Inbox, str(event.event_id))
-            if existing.payload_hash != digest:
+            if existing is None or existing.payload_hash != digest:
                 raise ValueError("event identity conflict")
             return
         if event.event_type == "network.reference_changed":
@@ -28,7 +28,7 @@ def handle(event: EventEnvelope):
                 "outlets": (Outlet, "outlet_id"),
                 "vehicles": (Vehicle, "vehicle_id"),
             }.get(event.data["entity"], (None, None))
-            if cls:
+            if cls and key is not None:
                 identity = event.aggregate_id
                 version = int(event.data["revision"])
                 current = db.get(ProjectionVersion, identity, with_for_update=True)

@@ -19,7 +19,7 @@ export interface DriverProofDraft {
   exception: string
   revision: number
   createdAt: string
-  signature?: Blob
-  managerSignOff?: ManagerSignOff
-  photoDigest?: string
+  signature?: Blob | undefined
+  managerSignOff?: ManagerSignOff | undefined
+  photoDigest?: string | undefined
 }

@@ -1,6 +1,9 @@
 name: waypoint-local
 
 x-aws: &aws
+  REDIS_URL: redis://redis:6379/0
+  RUNTIME_NAMESPACE: waypoint-local
+  TRUSTED_PROXY_CIDRS: 172.16.0.0/12
   AWS_REGION: ap-south-1
   AWS_ENDPOINT_URL: http://localstack:4566
   AWS_ACCESS_KEY_ID: test
@@ -38,6 +41,16 @@ x-notifications: &notifications
   CONSUMER_QUEUE_URL: http://localstack:4566/000000000000/notifications
 
 services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+
   db:
     image: postgres:16-alpine
     environment:
@@ -129,28 +142,28 @@ services:
     pull_policy: build
     image: waypoint-identity:local
     environment: *identity
-    depends_on: {seed: {condition: service_completed_successfully}}
+    depends_on: {seed: {condition: service_completed_successfully}, redis: {condition: service_healthy}}
   network:
     stop_grace_period: 40s
     build: {context: ., dockerfile: services/network-fleet/Dockerfile}
     pull_policy: build
     image: waypoint-network:local
     environment: *network
-    depends_on: {seed: {condition: service_completed_successfully}}
+    depends_on: {seed: {condition: service_completed_successfully}, redis: {condition: service_healthy}}
   operations:
     stop_grace_period: 40s
     build: {context: ., dockerfile: services/operations/Dockerfile}
     pull_policy: build
     image: waypoint-operations:local
     environment: *ops
-    depends_on: {seed: {condition: service_completed_successfully}}
+    depends_on: {seed: {condition: service_completed_successfully}, redis: {condition: service_healthy}}
   notifications:
     stop_grace_period: 40s
     build: {context: ., dockerfile: services/notifications/Dockerfile}
     pull_policy: build
     image: waypoint-notifications:local
     environment: *notifications
-    depends_on: {seed: {condition: service_completed_successfully}}
+    depends_on: {seed: {condition: service_completed_successfully}, redis: {condition: service_healthy}}
 
   identity-publisher:
     stop_grace_period: 120s
@@ -236,6 +249,7 @@ services:
     depends_on: [ingress]
 
 volumes:
+  redisdata:
   pgdata:
   localstack:
   frontend_node_modules:

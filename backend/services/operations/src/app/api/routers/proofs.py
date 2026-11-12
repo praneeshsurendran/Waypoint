@@ -1,3 +1,5 @@
+from pydantic import TypeAdapter
+from waypoint_contracts.runtime import DownloadResult
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from app.api.deps import CurrentUser, DbDep
@@ -8,8 +10,21 @@ from app.infrastructure.storage.proofs import storage
 router = APIRouter(tags=["evidence"])
 
 
-@router.get("/uploads/{key}")
-def get_proof(key: str, db: DbDep, user: CurrentUser):
+@router.get(
+    "/uploads/{key}",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "Authorized private proof image",
+            "content": {
+                "image/jpeg": {"schema": {"type": "string", "format": "binary"}},
+                "image/png": {"schema": {"type": "string", "format": "binary"}},
+                "image/webp": {"schema": {"type": "string", "format": "binary"}},
+            },
+        }
+    },
+)
+def get_proof(key: str, db: DbDep, user: CurrentUser) -> Response:
     proof = db.get(ProofObject, key)
     if not proof:
         raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Evidence not found."})
@@ -27,8 +42,12 @@ def get_proof(key: str, db: DbDep, user: CurrentUser):
     )
 
 
-@router.get("/api/v1/evidence/{key}/download-url")
-def download_url(key: str, db: DbDep, user: CurrentUser):
+@router.get(
+    "/api/v1/evidence/{key}/download-url",
+    response_model=DownloadResult,
+    response_model_exclude_unset=True,
+)
+def download_url(key: str, db: DbDep, user: CurrentUser) -> DownloadResult:
     from app.infrastructure.storage.proofs import S3ProofStorage
 
     proof = db.get(ProofObject, key)
@@ -37,8 +56,12 @@ def download_url(key: str, db: DbDep, user: CurrentUser):
     authorize_proof(db, proof, user)
     adapter = storage()
     if not isinstance(adapter, S3ProofStorage):
-        return {"url": "/uploads/" + key, "expires_in": 0, "requires_authorization": True}
+        return TypeAdapter(DownloadResult).validate_python(
+            {"url": "/uploads/" + key, "expires_in": 0, "requires_authorization": True}
+        )
     url = adapter.client.generate_presigned_url(
         "get_object", Params={"Bucket": adapter.bucket, "Key": "proofs/" + proof.key}, ExpiresIn=60
     )
-    return {"url": url, "expires_in": 60, "requires_authorization": False}
+    return TypeAdapter(DownloadResult).validate_python(
+        {"url": url, "expires_in": 60, "requires_authorization": False}
+    )

@@ -1,6 +1,9 @@
-import { request } from '@/api/client/apiClient'
+/** Backend OpenAPI owns these contracts; responses are validated before returning. */
+import { contractRequest } from '@/api/client/contractClient'
+import type { ApiResponse, ApiOptions as ContractOptions } from '@/types/api/contracts'
 
-/** Backend deferrals transport; callers supply their typed response projection. */
-export function postDeferrals<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/deferrals', options)
+export function postDeferrals(
+  options: ContractOptions<'/deferrals', 'post'>,
+): Promise<ApiResponse<'/deferrals', 'post'>> {
+  return contractRequest('/deferrals', 'post', options)
 }

@@ -4,10 +4,16 @@ import logging
 import signal
 import threading
 
-from . import decode_message
+from collections.abc import Callable
+from waypoint_contracts.events import EventEnvelope
+from . import decode_message, MessageQueue
 
 
-def consume(queue, handle, stop=None):
+def consume(
+    queue: MessageQueue,
+    handle: Callable[[EventEnvelope], None],
+    stop: threading.Event | None = None,
+) -> None:
     stop = stop or threading.Event()
     if threading.current_thread() is threading.main_thread():
         signal.signal(signal.SIGTERM, lambda *_: stop.set())
@@ -22,7 +28,7 @@ def consume(queue, handle, stop=None):
         for message in messages:
             finished = threading.Event()
 
-            def heartbeat():
+            def heartbeat() -> None:
                 while not finished.wait(40):
                     try:
                         queue.extend(message)
@@ -53,7 +59,7 @@ def consume(queue, handle, stop=None):
                 thread.join(timeout=1)
 
 
-def publish_loop(publish):
+def publish_loop(publish: Callable[[], int]) -> None:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())

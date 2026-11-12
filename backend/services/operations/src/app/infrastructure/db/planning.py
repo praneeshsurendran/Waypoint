@@ -1,6 +1,7 @@
 """DB <-> planner dataclass adapters."""
 
 from __future__ import annotations
+
 from app.services.calendar import next_operating_day
 
 import csv
@@ -79,7 +80,7 @@ def build_context(
 
     depots = {depot.code: depot for depot in db.query(Depot).all()}
 
-    def _safe_depot_coords(code):
+    def _safe_depot_coords(code: str) -> tuple[float, float]:
         depot = depots.get(code)
         if depot and depot.lat is not None and depot.lng is not None:
             return depot.lat, depot.lng

@@ -1,6 +1,11 @@
-from typing import Annotated
+from pydantic import TypeAdapter
+from waypoint_contracts.runtime import NotificationOut, OkResult
+from typing import Annotated, TypeVar, NoReturn
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import Select
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, and_
+from sqlalchemy.dialects.postgresql import insert
 from waypoint_security import Principal, verified_principal
 from waypoint_notifications.bootstrap import get_db
 from waypoint_notifications.infrastructure.db.notifications import (
@@ -12,7 +17,10 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 CurrentUser = Annotated[Principal, Depends(verified_principal)]
 
 
-def scoped(query, user):
+RowT = TypeVar("RowT", bound=tuple[object, ...])
+
+
+def scoped(query: Select[RowT], user: Principal) -> Select[RowT]:
     if user.role == "STORE_MANAGER":
         if not user.outlet_id:
             raise HTTPException(
@@ -34,36 +42,57 @@ def scoped(query, user):
                 detail={"code": "FORBIDDEN", "message": "Depot assignment required."},
             )
         return query.where(Notification.depot_id == user.depot_id)
+    if user.role == "DISPATCHER" and user.depot_id:
+        return query.where(Notification.depot_id == user.depot_id)
+    if user.role not in ("ADMIN", "DISPATCHER"):
+        raise HTTPException(
+            403, detail={"code": "FORBIDDEN", "message": "Unsupported role."}
+        )
     return query
 
 
-@router.get("")
+@router.get("", response_model=list[NotificationOut], response_model_exclude_unset=True)
 def list_notifications(
     user: CurrentUser,
-    db=Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-):
-    rows = db.scalars(
-        scoped(select(Notification), user)
+) -> list[NotificationOut]:
+    rows = db.execute(
+        scoped(
+            select(Notification, ReadReceipt.event_id).outerjoin(
+                ReadReceipt,
+                and_(
+                    ReadReceipt.event_id == Notification.event_id,
+                    ReadReceipt.user_id == user.id,
+                ),
+            ),
+            user,
+        )
         .order_by(Notification.created_at.desc(), Notification.event_id)
         .offset(offset)
         .limit(limit)
     ).all()
-    return [
-        {
-            "id": row.event_id,
-            "type": row.event_type,
-            "data": row.payload,
-            "created_at": row.created_at,
-            "read": db.get(ReadReceipt, (row.event_id, user.id)) is not None,
-        }
-        for row in rows
-    ]
+    return TypeAdapter(list[NotificationOut]).validate_python(
+        [
+            {
+                "id": row.event_id,
+                "type": row.event_type,
+                "data": row.payload,
+                "created_at": row.created_at,
+                "read": read_event_id is not None,
+            }
+            for row, read_event_id in rows
+        ]
+    )
 
 
-@router.post("/{event_id}/read")
-def mark_read(event_id: str, user: CurrentUser, db=Depends(get_db)):
+@router.post(
+    "/{event_id}/read", response_model=OkResult, response_model_exclude_unset=True
+)
+def mark_read(
+    event_id: str, user: CurrentUser, db: Annotated[Session, Depends(get_db)]
+) -> OkResult:
     row = db.scalar(
         scoped(select(Notification).where(Notification.event_id == event_id), user)
     )
@@ -71,14 +100,17 @@ def mark_read(event_id: str, user: CurrentUser, db=Depends(get_db)):
         raise HTTPException(
             404, detail={"code": "NOT_FOUND", "message": "Notification not found."}
         )
-    if db.get(ReadReceipt, (event_id, user.id)) is None:
-        db.add(ReadReceipt(event_id=event_id, user_id=user.id))
+    db.execute(
+        insert(ReadReceipt)
+        .values(event_id=event_id, user_id=user.id)
+        .on_conflict_do_nothing(index_elements=["event_id", "user_id"])
+    )
     db.commit()
-    return {"ok": True}
+    return TypeAdapter(OkResult).validate_python({"ok": True})
 
 
-@router.post("/push-subscriptions", status_code=501)
-def register_push(user: CurrentUser):
+@router.post("/push-subscriptions", status_code=501, response_model=None)
+def register_push(user: CurrentUser) -> NoReturn:
     raise HTTPException(
         501,
         detail={

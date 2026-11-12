@@ -14,7 +14,7 @@ export function isRunningLate(orders: Order[], stops: Stop[], vehicleId: string)
 }
 
 export function minutesBetween(from: string, to: string) {
-  const [fh, fm] = from.split(':').map(Number)
-  const [th, tm] = to.split(':').map(Number)
+  const [fh = Number.NaN, fm = Number.NaN] = from.split(':').map(Number)
+  const [th = Number.NaN, tm = Number.NaN] = to.split(':').map(Number)
   return th * 60 + tm - (fh * 60 + fm)
 }

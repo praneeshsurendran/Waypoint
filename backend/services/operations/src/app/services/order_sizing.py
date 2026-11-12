@@ -6,6 +6,7 @@ chilled alike), so the system works them out and does not rely on what a store t
 
 from __future__ import annotations
 
+
 # (kg, m3) per unit: a case for Fresh, a carton for Style, an item for Tech.
 PER_UNIT: dict[str, tuple[float, float]] = {
     "Fresh": (6.9, 0.037),

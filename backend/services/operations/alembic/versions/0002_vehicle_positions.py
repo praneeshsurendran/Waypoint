@@ -7,6 +7,7 @@ Revises: 0001_initial
 
 from __future__ import annotations
 
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

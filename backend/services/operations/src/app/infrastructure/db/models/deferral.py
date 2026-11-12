@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -47,5 +48,5 @@ class Deferral(Base):
     next_run_date: Mapped[Optional[dt.date]] = mapped_column(nullable=True)
     is_override: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    plan_rel: Mapped["Plan"] = relationship("Plan", back_populates="deferrals")  # type: ignore[name-defined]
-    order_rel: Mapped["Order"] = relationship("Order", back_populates="deferrals")  # type: ignore[name-defined]
+    plan_rel: Mapped["Plan"] = relationship("Plan", back_populates="deferrals")
+    order_rel: Mapped["Order"] = relationship("Order", back_populates="deferrals")

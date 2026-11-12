@@ -50,7 +50,7 @@ interface Draft {
   password: string
 }
 type Errors = Partial<
-  Record<'name' | 'mobile' | 'email' | 'assignment' | 'username' | 'password', string>
+  Record<'name' | 'mobile' | 'email' | 'assignment' | 'username' | 'password', string | undefined>
 >
 
 const validEmail = (text: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text.trim())

@@ -111,7 +111,7 @@ const brandRules: Record<
 const hhmm = (time?: string | null) => (time ? time.slice(0, 5) : undefined)
 
 const clock12 = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number)
+  const [hours = Number.NaN, minutes = Number.NaN] = time.split(':').map(Number)
   return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`
 }
 
@@ -181,7 +181,7 @@ export function defaultWindow(brand: Brand): { earliest: string; latest: string 
 }
 
 const time12 = (time: string) => {
-  const [h, m] = time.split(':').map(Number)
+  const [h = Number.NaN, m = Number.NaN] = time.split(':').map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }
 

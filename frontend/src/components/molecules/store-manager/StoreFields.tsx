@@ -6,7 +6,7 @@ import { orderNumber, quantityText, windowText } from '@/utils/store-manager/ord
 
 import '@/design-system/features/store.css'
 
-export function PageIntro({ title, context }: { title: string; context?: ReactNode }) {
+export function PageIntro({ title, context }: { title: string; context?: ReactNode | undefined }) {
   return (
     <header className="sm-intro">
       <h1>{title}</h1>
@@ -20,9 +20,9 @@ export function Callout({
   title,
   children,
 }: {
-  tone?: 'warning' | 'success' | 'danger'
+  tone?: 'warning' | 'success' | 'danger' | undefined
   title: string
-  children?: ReactNode
+  children?: ReactNode | undefined
 }) {
   return (
     <div className="sm-callout" role={tone === 'danger' ? 'alert' : 'status'}>
@@ -48,9 +48,9 @@ export function Tile({
 }: {
   label: string
   value: ReactNode
-  size?: 'sm' | 'md' | 'lg'
-  tone?: 'success'
-  big?: boolean
+  size?: 'sm' | 'md' | 'lg' | undefined
+  tone?: 'success' | undefined
+  big?: boolean | undefined
 }) {
   return (
     <div
@@ -69,8 +69,8 @@ export function FieldInput({
   ...input
 }: {
   label: string
-  error?: string
-  hint?: string
+  error?: string | undefined
+  hint?: string | undefined
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="sm-field">
@@ -92,11 +92,11 @@ export function StepperField({
 }: {
   label: string
   /** Keep to a comfortable width when the field has a whole row to itself. */
-  narrow?: boolean
+  narrow?: boolean | undefined
   /** What one step adds, for the button labels: "case". */
   unit: string
   value: string
-  error?: string
+  error?: string | undefined
   onChange: (value: string) => void
   onStep: (by: number) => void
 }) {
@@ -133,11 +133,11 @@ export function ReplaceNotice({
     weight: number
     volume: number
     window: string
-    windowEnd?: string
-    brand?: 'Fresh' | 'Style' | 'Tech'
+    windowEnd?: string | undefined
+    brand?: 'Fresh' | 'Style' | 'Tech' | undefined
   }
   /** Tech: the order is being changed and no other order is touched. */
-  change?: boolean
+  change?: boolean | undefined
 }) {
   const unsent = order.id.startsWith('PENDING')
   return (
@@ -155,7 +155,7 @@ export function ReplaceNotice({
   )
 }
 
-export function PlannedNotice({ action = 'Changing' }: { action?: string }) {
+export function PlannedNotice({ action = 'Changing' }: { action?: string | undefined }) {
   return (
     <p className="sm-planned" role="note">
       <Pill tone="orange">Already planned</Pill>

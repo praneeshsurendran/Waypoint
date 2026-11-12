@@ -1,12 +1,27 @@
+import { getUser, authChangedEvent } from '@/infrastructure/storage/authSession'
 import * as referenceApi from '@/api/endpoints/reference'
 import type { OutletRef } from '@/types/api/responses'
-import type { ApiOutlet } from '@/types/api/reference'
+
+const TTL = 30000
+let scope = ''
+let expires = 0
+function checkScope(): void {
+  const user = getUser()
+  const next = JSON.stringify([user?.id, user?.role, user?.outlet_id, user?.depot_id])
+  if (next !== scope || Date.now() >= expires) {
+    outletRefsCache = undefined
+    vehicleDepotsCache = undefined
+    scope = next
+    expires = Date.now() + TTL
+  }
+}
 
 let outletRefsCache: Promise<Map<string, OutletRef>> | undefined
 
 export function outletReferences(): Promise<Map<string, OutletRef>> {
+  checkScope()
   outletRefsCache ??= referenceApi
-    .getReferenceOutlets<ApiOutlet[]>()
+    .getReferenceOutlets()
     .then(
       (outlets) =>
         new Map(
@@ -34,8 +49,9 @@ export function outletReferences(): Promise<Map<string, OutletRef>> {
 let vehicleDepotsCache: Promise<Map<string, string>> | undefined
 
 export function vehicleDepots(): Promise<Map<string, string>> {
+  checkScope()
   vehicleDepotsCache ??= referenceApi
-    .getReferenceVehicles<{ vehicle_id: string; depot_code: string }[]>()
+    .getReferenceVehicles()
     .then((vehicles) => new Map(vehicles.map((v) => [v.vehicle_id, v.depot_code])))
     .catch(() => {
       vehicleDepotsCache = undefined
@@ -46,4 +62,9 @@ export function vehicleDepots(): Promise<Map<string, string>> {
 
 export function invalidateOutletReferences() {
   outletRefsCache = undefined
+  vehicleDepotsCache = undefined
+  expires = 0
 }
+
+if (typeof window !== 'undefined')
+  window.addEventListener(authChangedEvent, invalidateOutletReferences)

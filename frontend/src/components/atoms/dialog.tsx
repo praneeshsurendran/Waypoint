@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from 'cn'
+import { cn } from '@/utils/cn'
 import { XIcon } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -47,7 +47,7 @@ function DialogContent({
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
+  showCloseButton?: boolean | undefined
 }) {
   const reduced = useReducedMotion()
   return (
@@ -98,7 +98,7 @@ function DialogFooter({
   children,
   ...props
 }: React.ComponentProps<'div'> & {
-  showCloseButton?: boolean
+  showCloseButton?: boolean | undefined
 }) {
   return (
     <div

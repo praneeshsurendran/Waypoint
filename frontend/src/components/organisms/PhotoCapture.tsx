@@ -11,11 +11,11 @@ export function PhotoCapture({
   onSave,
   saveLabel = 'Save photograph',
 }: {
-  evidenceId?: string
-  disabled?: boolean
-  busy?: boolean
+  evidenceId?: string | undefined
+  disabled?: boolean | undefined
+  busy?: boolean | undefined
   onSave: (file: File) => Promise<unknown>
-  saveLabel?: string
+  saveLabel?: string | undefined
 }) {
   const { url, evidence, isError, error: evidenceError, refetch } = useEvidence(evidenceId)
   const [file, setFile] = useState<File | null>(null)

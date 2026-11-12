@@ -20,6 +20,6 @@ export interface RouteEvent {
   revision: number
   kind: RouteEventKind
   detail: string
-  stopId?: string
-  outletId?: string
+  stopId?: string | undefined
+  outletId?: string | undefined
 }

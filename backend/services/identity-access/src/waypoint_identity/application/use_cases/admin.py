@@ -1,11 +1,6 @@
 from __future__ import annotations
+from pydantic import TypeAdapter
 from typing import Optional
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session as DbDep
-from waypoint_identity.core.security import hash_password
-from waypoint_identity.infrastructure.db.projections import Trip
-from waypoint_identity.infrastructure.db.projections import Depot, Outlet, Vehicle
-from waypoint_identity.infrastructure.db.accounts import ROLES, User
 from waypoint_contracts.admin import (
     AdminUserCreate,
     AdminUserOut,
@@ -13,13 +8,23 @@ from waypoint_contracts.admin import (
     PasswordReset,
     TripReassign,
 )
+
+from typing import NoReturn
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session as DbDep
+from waypoint_identity.core.security import hash_password
+from waypoint_identity.infrastructure.db.projections import Trip
+from waypoint_identity.infrastructure.db.projections import Depot, Outlet, Vehicle
+from waypoint_identity.infrastructure.db.accounts import ROLES, User
 from waypoint_identity.infrastructure.db.audit import log_action
 
 
 _ADMIN = None
 
 
-def _fail(code: str, message: str, http: int = status.HTTP_422_UNPROCESSABLE_CONTENT):
+def _fail(
+    code: str, message: str, http: int = status.HTTP_422_UNPROCESSABLE_CONTENT
+) -> NoReturn:
     raise HTTPException(status_code=http, detail={"code": code, "message": message})
 
 
@@ -34,7 +39,13 @@ def _snapshot(user: User) -> dict:
     }
 
 
-def _check_links(db, role: str, outlet_id, vehicle_id, depot_id) -> None:
+def _check_links(
+    db: DbDep,
+    role: str,
+    outlet_id: str | None,
+    vehicle_id: str | None,
+    depot_id: str | None,
+) -> None:
     if role not in ROLES:
         _fail("INVALID_ROLE", f"Role must be one of {', '.join(ROLES)}.")
     if outlet_id and (not db.get(Outlet, outlet_id)):
@@ -50,7 +61,11 @@ def _check_links(db, role: str, outlet_id, vehicle_id, depot_id) -> None:
 
 
 def _check_unique(
-    db, user_id: Optional[int], username=None, email=None, phone=None
+    db: DbDep,
+    user_id: Optional[int],
+    username: str | None = None,
+    email: str | None = None,
+    phone: str | None = None,
 ) -> None:
     for column, value, label in (
         (User.username, username, "username"),
@@ -70,7 +85,7 @@ def _check_unique(
             )
 
 
-def _out(db, user: User, trips: dict[str, int] | None = None) -> AdminUserOut:
+def _out(db: DbDep, user: User, trips: dict[str, int] | None = None) -> AdminUserOut:
     """The account, with whether its vehicle is on a trip that has left the depot."""
     out = AdminUserOut.model_validate(user)
     if user.role == "DRIVER" and user.vehicle_id:
@@ -82,7 +97,7 @@ def _out(db, user: User, trips: dict[str, int] | None = None) -> AdminUserOut:
     return out
 
 
-def _trips_in_transit(db) -> dict[str, int]:
+def _trips_in_transit(db: DbDep) -> dict[str, int]:
     rows = (
         db.query(Trip.vehicle_id, Trip.trip_number)
         .filter(Trip.status == "IN_TRANSIT")
@@ -91,12 +106,14 @@ def _trips_in_transit(db) -> dict[str, int]:
     return {vehicle_id: number for vehicle_id, number in rows}
 
 
-def list_users(db: DbDep, _: object = _ADMIN):
+def list_users(db: DbDep, _: object = _ADMIN) -> list[AdminUserOut]:
     trips = _trips_in_transit(db)
-    return [_out(db, user, trips) for user in db.query(User).order_by(User.id).all()]
+    return TypeAdapter(list[AdminUserOut]).validate_python(
+        [_out(db, user, trips) for user in db.query(User).order_by(User.id).all()]
+    )
 
 
-def create_user(body: AdminUserCreate, db: DbDep, admin: User = _ADMIN):
+def create_user(body: AdminUserCreate, db: DbDep, admin: User) -> AdminUserOut:
     username = body.username.strip()
     if not username or not body.full_name.strip():
         _fail("INVALID_INPUT", "A name and a username are required.")
@@ -123,10 +140,12 @@ def create_user(body: AdminUserCreate, db: DbDep, admin: User = _ADMIN):
     log_action(db, "USER_CREATED", "user", user.id, admin.id, after=_snapshot(user))
     db.commit()
     db.refresh(user)
-    return _out(db, user)
+    return TypeAdapter(AdminUserOut).validate_python(_out(db, user))
 
 
-def update_user(user_id: int, body: AdminUserUpdate, db: DbDep, admin: User = _ADMIN):
+def update_user(
+    user_id: int, body: AdminUserUpdate, db: DbDep, admin: User
+) -> AdminUserOut:
     user = db.get(User, user_id)
     if not user:
         _fail("NOT_FOUND", "User not found.", status.HTTP_404_NOT_FOUND)
@@ -157,10 +176,10 @@ def update_user(user_id: int, body: AdminUserUpdate, db: DbDep, admin: User = _A
     log_action(db, action, "user", user.id, admin.id, before=before, after=after)
     db.commit()
     db.refresh(user)
-    return _out(db, user)
+    return TypeAdapter(AdminUserOut).validate_python(_out(db, user))
 
 
-def reassign_trip(user_id: int, body: TripReassign, db: DbDep, admin: User = _ADMIN):
+def reassign_trip(user_id: int, body: TripReassign, db: DbDep, admin: User) -> None:
     """Hands a driver's vehicle, and so the trip on it, to another driver at the same depot."""
     source = db.get(User, user_id)
     target = db.get(User, body.to_user_id)
@@ -198,7 +217,7 @@ def reassign_trip(user_id: int, body: TripReassign, db: DbDep, admin: User = _AD
     db.commit()
 
 
-def reset_password(user_id: int, body: PasswordReset, db: DbDep, admin: User = _ADMIN):
+def reset_password(user_id: int, body: PasswordReset, db: DbDep, admin: User) -> None:
     user = db.get(User, user_id)
     if not user:
         _fail("NOT_FOUND", "User not found.", status.HTTP_404_NOT_FOUND)

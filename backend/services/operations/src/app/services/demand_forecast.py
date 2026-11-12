@@ -15,6 +15,9 @@ forecast volume divided by that weekly capacity, rounded up. Chilled volume need
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
+from waypoint_contracts.runtime import DemandWeek, WeekCapacity, Backtest, DemandForecast
 import csv
 import datetime as dt
 import math
@@ -28,7 +31,7 @@ TRIPS_PER_DAY = 2
 DEFAULT_OPERATING_DAYS = 6
 
 
-def _read_csv(path: Path):
+def _read_csv(path: Path) -> Iterator[dict[str, str]]:
     with path.open(newline="", encoding="utf-8") as handle:
         yield from csv.DictReader(handle)
 
@@ -106,7 +109,11 @@ def _point_forecast(
     return base_total * factor, base_chilled * factor
 
 
-def _backtest(series, events, weeks: int = 4) -> dict:
+def _backtest(
+    series: dict[tuple[str, str], list[tuple[int, int, float, float]]],
+    events: set[tuple[int, int]],
+    weeks: int = 4,
+) -> Backtest:
     """Hide the last known weeks, forecast them from earlier data, and measure the error."""
     all_weeks = sorted({(p[0], p[1]) for points in series.values() for p in points})
     held_out = set(all_weeks[-weeks:])
@@ -136,7 +143,7 @@ def _backtest(series, events, weeks: int = 4) -> dict:
 
 
 @lru_cache(maxsize=1)
-def compute(data_root: str) -> dict:
+def compute(data_root: str) -> DemandForecast:
     root = Path(data_root)
     events = _event_weeks(root / "General Data" / "calendar.csv")
     operating_days = _operating_days(root / "General Data" / "calendar.csv")
@@ -162,7 +169,7 @@ def compute(data_root: str) -> dict:
     for points in series.values():
         points.sort()
 
-    history = [
+    history: list[DemandWeek] = [
         {
             "depot": depot,
             "brand": brand,
@@ -187,13 +194,13 @@ def compute(data_root: str) -> dict:
     # Forecast every week from the end of history to the end of the test horizon, so the
     # gap between them is filled. Test weeks are flagged so the submission rows can be found.
     target_weeks: list[tuple[int, int]] = []
-    week = _next_week(*last_known)
-    while week <= horizon_end:
-        target_weeks.append(week)
-        week = _next_week(*week)
+    target_week = _next_week(*last_known)
+    while target_week <= horizon_end:
+        target_weeks.append(target_week)
+        target_week = _next_week(*target_week)
     combos = set(series) | {(d, b) for d, b, _, _ in test_pairs}
 
-    forecast = []
+    forecast: list[DemandWeek] = []
     for depot, brand in sorted(combos):
         points = series.get((depot, brand), [])
         for year, wk in target_weeks:
@@ -217,26 +224,26 @@ def compute(data_root: str) -> dict:
         lambda: {"total_m3": 0.0, "chilled_m3": 0.0}
     )
     for f in forecast:
-        cell = grouped[(f["depot"], f["iso_year"], f["iso_week"])]
-        cell["total_m3"] += f["total_m3"]
-        cell["chilled_m3"] += f["chilled_m3"]
-    capacity = []
-    for (depot, year, week), cell in sorted(grouped.items()):
+        totals = grouped[(f["depot"], f["iso_year"], f["iso_week"])]
+        totals["total_m3"] += f["total_m3"]
+        totals["chilled_m3"] += f["chilled_m3"]
+    capacity: list[WeekCapacity] = []
+    for (depot, year, week), week_totals in sorted(grouped.items()):
         fleet_row = fleet.get(
             depot, {"vehicles": 0, "avg_volume": 0.0, "reefers": 0, "avg_reefer_volume": 0.0}
         )
         days = operating_days.get((year, week), DEFAULT_OPERATING_DAYS)
         per_vehicle = fleet_row["avg_volume"] * TRIPS_PER_DAY * days
         per_reefer = fleet_row["avg_reefer_volume"] * TRIPS_PER_DAY * days
-        vehicles_needed = _needed(cell["total_m3"], per_vehicle)
-        reefers_needed = _needed(cell["chilled_m3"], per_reefer)
+        vehicles_needed = _needed(week_totals["total_m3"], per_vehicle)
+        reefers_needed = _needed(week_totals["chilled_m3"], per_reefer)
         capacity.append(
             {
                 "depot": depot,
                 "iso_year": year,
                 "iso_week": week,
-                "total_m3": round(cell["total_m3"], 3),
-                "chilled_m3": round(cell["chilled_m3"], 3),
+                "total_m3": round(week_totals["total_m3"], 3),
+                "chilled_m3": round(week_totals["chilled_m3"], 3),
                 "operating_days": days,
                 "vehicles_needed": vehicles_needed,
                 "vehicles_available": int(fleet_row["vehicles"]),

@@ -15,11 +15,11 @@ export function DriverScreen({
   children,
 }: {
   title: string
-  description?: string
-  loading?: boolean
-  error?: Error | null
-  retry?: () => void
-  narrow?: boolean
+  description?: string | undefined
+  loading?: boolean | undefined
+  error?: Error | null | undefined
+  retry?: (() => void) | undefined
+  narrow?: boolean | undefined
   children: ReactNode
 }) {
   return (

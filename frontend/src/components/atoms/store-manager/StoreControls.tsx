@@ -8,7 +8,7 @@ export function Pill({
   tone = 'green',
   children,
 }: {
-  tone?: 'green' | 'orange' | 'red' | 'amber'
+  tone?: 'green' | 'orange' | 'red' | 'amber' | undefined
   children: ReactNode
 }) {
   return (
@@ -31,7 +31,10 @@ export function Action({
   small,
   className,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; small?: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: Variant | undefined
+  small?: boolean | undefined
+}) {
   return <button type="button" className={classes(variant, small, className)} {...props} />
 }
 
@@ -40,6 +43,6 @@ export function ActionLink({
   small,
   className,
   ...props
-}: LinkProps & { variant?: Variant; small?: boolean }) {
+}: LinkProps & { variant?: Variant | undefined; small?: boolean | undefined }) {
   return <Link className={classes(variant, small, className)} {...props} />
 }

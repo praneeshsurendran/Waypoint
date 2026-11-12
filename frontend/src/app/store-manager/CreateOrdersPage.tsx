@@ -89,7 +89,7 @@ function CreateOrders() {
         {outletId} · Fresh only. Dry groceries are ordered every operating day; chilled groceries
         only on the days you need them. Check quantities and receiving windows.
       </Callout>
-      {previous.length > 0 && (
+      {previous[0] !== undefined && (
         <section className="sm-panel" aria-label="Repeat an earlier order">
           <p className="sm-muted">
             Ordered the same as {deliveryDayLabel(previous[0], clock)}?{' '}

@@ -9,6 +9,7 @@ Budgets per vehicle per day:
 
 from __future__ import annotations
 
+
 from app.domain.planning.types import PlannerContext
 
 FRESH_BUDGET_MIN = 270.0

@@ -15,7 +15,7 @@ export const FRESH_LIMITS: ReceivingLimits = {
 }
 
 export const minutes = (clock: string) => {
-  const [h, m] = clock.split(':').map(Number)
+  const [h = Number.NaN, m = Number.NaN] = clock.split(':').map(Number)
   return h * 60 + m
 }
 const clock = (total: number) =>
@@ -37,7 +37,7 @@ export function endOptions(start: string, limits: ReceivingLimits = FRESH_LIMITS
 
 /** "05:30" → "5:30 AM", "12:00" → "12:00 PM" */
 export function formatTime12(time: string) {
-  const [h, m] = time.split(':').map(Number)
+  const [h = Number.NaN, m = Number.NaN] = time.split(':').map(Number)
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
 }
 
@@ -45,7 +45,7 @@ export const formatWindow = (start: string, end: string) => `${start}–${end}`
 const WINDOW = /^(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})$/
 export function parseWindow(text: string) {
   const match = WINDOW.exec(text.trim())
-  return match ? { start: match[1], end: match[2] } : undefined
+  return match?.[1] && match[2] ? { start: match[1], end: match[2] } : undefined
 }
 
 /** Why a window cannot be used, or nothing when it can. */

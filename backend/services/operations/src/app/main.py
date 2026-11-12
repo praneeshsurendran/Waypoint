@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 import logging
 import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.routing import APIRoute
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from waypoint_observability import install
@@ -34,7 +37,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     @asynccontextmanager
-    async def lifespan(app):
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if settings.seed_on_start:
             from seed.run import main as seed_main
 
@@ -63,14 +66,14 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
-        expose_headers=["X-Correlation-ID"],
+        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID", "traceparent"],
+        expose_headers=["X-Correlation-ID", "Retry-After", "traceparent"],
     )
 
     # --- Standard error handler ---
     @app.exception_handler(Exception)
-    async def generic_error_handler(request: Request, exc: Exception):
-        logger.exception("Unhandled error: %s", exc)
+    async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.error("Unhandled error (%s)", type(exc).__name__)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -98,7 +101,7 @@ def create_app() -> FastAPI:
 
         audit_router = APIRouter()
         for route in people.router.routes:
-            if route.path == "/admin/audit":
+            if isinstance(route, APIRoute) and route.path == "/admin/audit":
                 audit_router.routes.append(route)
         app.include_router(audit_router, prefix=prefix)
     # app.include_router(people.router, prefix=prefix)            # /api/v1/admin/users, outlets, vehicles, audit

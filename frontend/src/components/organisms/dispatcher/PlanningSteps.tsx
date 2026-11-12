@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 export function PlanningSteps({ current }: { current: number }) {
-  const steps = [
+  const steps: [string, string][] = [
     ['Order queue', '/dispatcher/orders'],
     ['Allocation', '/dispatcher/planning'],
     ['Deferrals', '/dispatcher/deferrals'],

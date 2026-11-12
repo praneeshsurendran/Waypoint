@@ -10,7 +10,7 @@ export function ReceiverSignaturePad({
   onChange,
   onClear,
 }: {
-  initial?: SignatureStroke[]
+  initial?: SignatureStroke[] | undefined
   resetKey: number
   valid: boolean
   onChange: (strokes: SignatureStroke[], image: Blob) => void

@@ -11,13 +11,13 @@ def proof_storage() -> ProofStorage:
     return storage()
 
 
-def event_publisher():
+def event_publisher() -> EventBridgePublisher:
     return EventBridgePublisher()
 
 
-def planning_queue():
+def planning_queue() -> SQSQueue:
     return SQSQueue(os.environ["PLANNING_QUEUE_URL"])
 
 
-def shutdown():
+def shutdown() -> None:
     engine.dispose()

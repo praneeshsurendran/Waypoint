@@ -7,7 +7,7 @@ export async function fetchEvidenceBlob(url: string): Promise<Blob | undefined> 
   const apiOrigin = new URL(BASE_URL, window.location.origin).origin
   const token = target.origin === apiOrigin ? getToken() : undefined
   const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
     cache: 'no-store',
   })
   return response.ok ? response.blob() : undefined

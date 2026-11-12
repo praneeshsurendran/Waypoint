@@ -1,10 +1,10 @@
+import * as driverApi from '@/api/endpoints/driver'
 import * as loadingApi from '@/api/endpoints/loading'
 import * as referenceApi from '@/api/endpoints/reference'
-import * as driverApi from '@/api/endpoints/driver'
-import type { ApiTrip } from '@/types/api/responses'
-import type { Load, Vehicle, Stop } from '@/types/models'
+import { outletReferences, vehicleDepots } from '@/infrastructure/adapters/http/reference'
 import type { LoadingApi } from '@/types/api/loading'
-import { vehicleDepots, outletReferences } from '@/infrastructure/adapters/http/reference'
+import type { ApiTrip } from '@/types/api/responses'
+import type { Load, Stop, Vehicle } from '@/types/models'
 
 import { mapStop } from '@/mappers/operations'
 
@@ -40,9 +40,9 @@ export function mapTripToLoad(trip: ApiTrip, depot?: string, vehicleDepot?: stri
         expected,
         loaded: loadedCount,
         stop: s.sequence ?? idx + 1,
-        district: s.district,
-        lat: s.lat,
-        lng: s.lng,
+        district: s.district ?? undefined,
+        lat: s.lat ?? undefined,
+        lng: s.lng ?? undefined,
         window: s.window_open?.slice(0, 5),
         eta: s.planned_eta
           ? new Date(s.planned_eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -89,7 +89,7 @@ export function createHttpLoadingApi(): LoadingApi {
       if (filter.depot) params.set('depot', filter.depot)
       const query = params.toString() ? `?${params}` : ''
       const [trips, depots] = await Promise.all([
-        loadingApi.getLoadingTripsWithDepotFilter<ApiTrip[]>(query).catch(() => [] as ApiTrip[]),
+        loadingApi.getLoadingTripsWithDepotFilter(query).catch(() => [] as ApiTrip[]),
         vehicleDepots(),
       ])
       return trips.map((t) => mapTripToLoad(t, filter.depot, depots.get(t.vehicle_id)))
@@ -97,14 +97,14 @@ export function createHttpLoadingApi(): LoadingApi {
 
     async getLoad(loadId) {
       if (!loadId) return undefined
-      const trip = await loadingApi.getLoadingTrip<ApiTrip>(loadId).catch(() => null)
+      const trip = await loadingApi.getLoadingTrip(loadId).catch(() => null)
       if (!trip) return undefined
       return mapTripToLoad(trip, undefined, (await vehicleDepots()).get(trip.vehicle_id))
     },
 
     async getWorkspace(loadId, depot) {
       if (!loadId) return undefined
-      const trip = await loadingApi.getLoadingTrip<ApiTrip>(loadId).catch(() => null)
+      const trip = await loadingApi.getLoadingTrip(loadId).catch(() => null)
       if (!trip) return undefined
 
       let vehicle: Vehicle = {
@@ -122,14 +122,7 @@ export function createHttpLoadingApi(): LoadingApi {
         updatedMinutes: 0,
       }
       try {
-        const v = await referenceApi.getReferenceVehicle<{
-          vehicle_id: string
-          depot_code: string
-          type: string
-          is_refrigerated: boolean
-          weight_cap_kg: number
-          volume_cap_m3: number
-        }>(trip.vehicle_id)
+        const v = await referenceApi.getReferenceVehicle(trip.vehicle_id)
         if (v) {
           vehicle = {
             id: v.vehicle_id,
@@ -187,7 +180,7 @@ export function createHttpLoadingApi(): LoadingApi {
       await loadingApi
         .reportLoadingFlag(loadId, {
           method: 'POST',
-          body: JSON.stringify({ status: 'OK', note: `Loaded ${quantity} cases for ${outlet}` }),
+          body: { status: 'OK', note: `Loaded ${quantity} cases for ${outlet}` },
         })
         .catch(() => {})
     },
@@ -220,7 +213,7 @@ export function createHttpLoadingApi(): LoadingApi {
       await loadingApi
         .reportLoadingFlag(loadId, {
           method: 'POST',
-          body: JSON.stringify({ status: 'DAMAGED', note: desc }),
+          body: { status: 'DAMAGED', note: desc },
         })
         .catch(() => {})
     },
@@ -241,7 +234,7 @@ export function createHttpLoadingApi(): LoadingApi {
       form.append('file', file)
       form.append('stop_id', loadId)
       const res = await driverApi
-        .postDriverUploads<{ path: string }>({
+        .postDriverUploads({
           method: 'POST',
           body: form,
         })
@@ -267,11 +260,11 @@ export function createHttpLoadingApi(): LoadingApi {
         await loadingApi
           .reportLoadingFlag(loadId, {
             method: 'POST',
-            body: JSON.stringify({
+            body: {
               status: 'OK',
               note: 'Loading proof photograph uploaded',
               photo_path: res.path,
-            }),
+            },
           })
           .catch(() => {})
       }

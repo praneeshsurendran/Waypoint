@@ -71,3 +71,61 @@ def test_owner_events_never_contain_password_hashes(contexts):
         event = db.scalars(select(Outbox)).one().envelope
         assert event["event_type"] == "identity.user_changed"
         assert "password_hash" not in event["data"]["record"]
+
+
+def test_invalid_issuer_audience_expiry_and_signature_are_rejected(service_clients):
+    import datetime as dt
+    import jwt
+    from waypoint_identity.core.settings import get_settings
+
+    clients = service_clients
+    headers = auth(clients, "driver")
+    token = headers["Authorization"].removeprefix("Bearer ")
+    settings = get_settings()
+    payload = jwt.decode(token, options={"verify_signature": False})
+    variants = [
+        ({**payload, "iss": "another-issuer"}, settings.jwt_secret),
+        ({**payload, "aud": "another-api"}, settings.jwt_secret),
+        (
+            {
+                **payload,
+                "exp": dt.datetime.now(dt.timezone.utc) - dt.timedelta(seconds=1),
+            },
+            settings.jwt_secret,
+        ),
+        (payload, "forged-key-at-least-thirty-two-characters"),
+        (
+            {key: value for key, value in payload.items() if key != "iss"},
+            settings.jwt_secret,
+        ),
+    ]
+    for claims, key in variants:
+        forged = jwt.encode(claims, key, algorithm=settings.jwt_algorithm)
+        assert (
+            clients["identity"]
+            .get("/api/v1/auth/me", headers={"Authorization": "Bearer " + forged})
+            .status_code
+            == 401
+        )
+
+
+def test_invalid_password_inputs_return_validation_error_without_echo(service_clients):
+    clients = service_clients
+    admin = auth(clients, "admin")
+    users = clients["identity"].get("/api/v1/admin/users", headers=admin).json()
+    user = next(user for user in users if user["username"] == "driver")
+    for password in ("zx!", "密" * 30, "x" * 73):
+        response = clients["identity"].post(
+            f'/api/v1/admin/users/{user["id"]}/reset-password',
+            headers=admin,
+            json={"password": password},
+        )
+        assert response.status_code == 422
+        assert password not in response.text
+        assert '"input"' not in response.text
+    assert (
+        clients["identity"]
+        .get("/api/v1/auth/me", headers=auth(clients, "driver"))
+        .status_code
+        == 200
+    )

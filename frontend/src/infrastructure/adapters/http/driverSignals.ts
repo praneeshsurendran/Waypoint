@@ -1,7 +1,7 @@
+import * as driverApi from '@/api/endpoints/driver'
 import * as notificationsApi from '@/api/endpoints/notifications'
 import type { DriverSignalsApi } from '@/types/api/driverSignals'
-import * as driverApi from '@/api/endpoints/driver'
-import type { DevicePosition, DeliveryNotice } from '@/types/driverSignals'
+import type { DeliveryNotice, DevicePosition } from '@/types/driverSignals'
 
 export const PENDING_POSITIONS_KEY = 'waypoint.pendingPositions'
 
@@ -34,7 +34,7 @@ export function toApiPosition(p: DevicePosition) {
 export async function sendPosition(position: DevicePosition) {
   await driverApi.postDriverPositions({
     method: 'POST',
-    body: JSON.stringify(toApiPosition(position)),
+    body: toApiPosition(position),
   })
 }
 

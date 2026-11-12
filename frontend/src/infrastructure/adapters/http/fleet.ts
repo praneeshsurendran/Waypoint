@@ -1,10 +1,10 @@
-import * as referenceApi from '@/api/endpoints/reference'
-import * as loadingApi from '@/api/endpoints/loading'
-import * as driverApi from '@/api/endpoints/driver'
 import * as adminApi from '@/api/endpoints/admin'
-import type { FleetApi } from '@/types/api/fleet'
+import * as driverApi from '@/api/endpoints/driver'
+import * as loadingApi from '@/api/endpoints/loading'
+import * as referenceApi from '@/api/endpoints/reference'
 import { getUser } from '@/infrastructure/storage/authSession'
-import type { ApiTrip, ApiDevicePosition } from '@/types/api/responses'
+import type { FleetApi } from '@/types/api/fleet'
+import type { ApiDevicePosition, ApiTrip } from '@/types/api/responses'
 
 import type { Vehicle } from '@/types/models'
 
@@ -17,11 +17,7 @@ export function minutesSince(iso: string) {
 export function createHttpFleetApi(): FleetApi {
   return {
     async listDepots() {
-      const depots = await referenceApi
-        .getReferenceDepots<
-          { code: string; name: string; lat: number | null; lng: number | null }[]
-        >()
-        .catch(() => [])
+      const depots = await referenceApi.getReferenceDepots().catch(() => [])
       return depots.flatMap((d) =>
         d.lat != null && d.lng != null
           ? [{ code: d.code, name: d.name, lat: d.lat, lng: d.lng }]
@@ -30,35 +26,17 @@ export function createHttpFleetApi(): FleetApi {
     },
     async listVehicles() {
       const [vehicles, trips, positions, depots] = await Promise.all([
-        referenceApi
-          .getReferenceVehicles<
-            Array<{
-              vehicle_id: string
-              type: string
-              is_refrigerated: boolean
-              weight_cap_kg: number
-              volume_cap_m3: number
-              brand?: string
-              depot_code?: string
-              registration?: string | null
-              status?: string
-              lat?: number
-              lng?: number
-            }>
-          >()
-          .catch(() => []),
+        referenceApi.getReferenceVehicles().catch(() => []),
         // Trips belong to the operating roles; administrators and stores are refused.
         ['ADMIN', 'STORE_MANAGER'].includes(getUser()?.role ?? '')
           ? Promise.resolve([] as ApiTrip[])
-          : loadingApi.getLoadingTrips<ApiTrip[]>().catch(() => [] as ApiTrip[]),
+          : loadingApi.getLoadingTrips().catch(() => [] as ApiTrip[]),
         // Only dispatchers and drivers may read vehicle positions; other roles would be refused.
         ['DISPATCHER', 'DRIVER'].includes(getUser()?.role ?? '')
-          ? driverApi
-              .getDriverPositionsLatest<ApiDevicePosition[]>()
-              .catch(() => [] as ApiDevicePosition[])
+          ? driverApi.getDriverPositionsLatest().catch(() => [] as ApiDevicePosition[])
           : Promise.resolve([] as ApiDevicePosition[]),
         referenceApi
-          .getReferenceDepots<Array<{ code: string; lat: number | null; lng: number | null }>>()
+          .getReferenceDepots()
           .catch(() => [] as Array<{ code: string; lat: number | null; lng: number | null }>),
       ])
       const positionByVehicle = new Map(positions.map((p) => [p.vehicle_id, p]))
@@ -74,7 +52,7 @@ export function createHttpFleetApi(): FleetApi {
       const best = new Map<string, string>()
       for (const t of trips) {
         const current = best.get(t.vehicle_id)
-        if (rank[t.status] && (!current || rank[t.status] > rank[current]))
+        if ((rank[t.status] ?? 0) > (current ? (rank[current] ?? 0) : 0))
           best.set(t.vehicle_id, t.status)
       }
       const tripStatusByVehicle = new Map(
@@ -102,8 +80,8 @@ export function createHttpFleetApi(): FleetApi {
           registration: v.registration ?? undefined,
           // No device fix: the depot's own position, or NaN when the depot has no coordinates.
           // NaN keeps the vehicle out of the map rather than drawing it at a made-up point.
-          lat: fix?.lat ?? v.lat ?? depotByCode.get(v.depot_code ?? '')?.lat ?? Number.NaN,
-          lng: fix?.lng ?? v.lng ?? depotByCode.get(v.depot_code ?? '')?.lng ?? Number.NaN,
+          lat: fix?.lat ?? depotByCode.get(v.depot_code ?? '')?.lat ?? Number.NaN,
+          lng: fix?.lng ?? depotByCode.get(v.depot_code ?? '')?.lng ?? Number.NaN,
           positionSource: fix ? 'device' : undefined,
           positionUpdatedAt: fix?.recorded_at,
           positionAccuracy: fix?.accuracy,
@@ -113,9 +91,9 @@ export function createHttpFleetApi(): FleetApi {
     },
 
     async createVehicle(input) {
-      const created = await adminApi.postAdminVehicles<{ vehicle_id: string }>({
+      const created = await adminApi.postAdminVehicles({
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           brand: input.brand,
           type: input.type === 'Van' ? 'van' : 'truck',
           is_refrigerated: input.reefer,
@@ -123,7 +101,7 @@ export function createHttpFleetApi(): FleetApi {
           weight_cap_kg: input.weightCapacity,
           volume_cap_m3: input.volumeCapacity,
           registration: input.registration || null,
-        }),
+        },
       })
       const vehicle = await this.getVehicle(created.vehicle_id)
       if (!vehicle) throw new Error('The vehicle was added but could not be read back.')
@@ -131,19 +109,7 @@ export function createHttpFleetApi(): FleetApi {
     },
 
     async getVehicle(vehicleId) {
-      const v = await referenceApi
-        .getReferenceVehicle<{
-          vehicle_id: string
-          type: string
-          is_refrigerated: boolean
-          weight_cap_kg: number
-          volume_cap_m3: number
-          depot_code?: string
-          registration?: string | null
-          lat?: number
-          lng?: number
-        }>(vehicleId)
-        .catch(() => null)
+      const v = await referenceApi.getReferenceVehicle(vehicleId).catch(() => null)
       if (!v) return undefined
       return {
         id: v.vehicle_id,
@@ -157,8 +123,8 @@ export function createHttpFleetApi(): FleetApi {
         location: v.depot_code ?? '',
         depot: v.depot_code,
         registration: v.registration ?? undefined,
-        lat: v.lat ?? 0,
-        lng: v.lng ?? 0,
+        lat: 0,
+        lng: 0,
         updatedMinutes: 0,
       }
     },

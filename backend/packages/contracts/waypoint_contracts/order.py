@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+
 import datetime as dt
 from typing import Optional
 
-from pydantic import BaseModel
+from waypoint_contracts.common import ContractModel as BaseModel
 
 from waypoint_contracts.common import OrmModel
 

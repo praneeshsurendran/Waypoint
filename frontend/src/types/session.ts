@@ -2,14 +2,14 @@ import type { Workspace } from '@/types/models'
 
 export interface Session {
   role: Workspace
-  memberId?: string
+  memberId?: string | undefined
   /** The sign-in name, for a real account. */
-  username?: string
+  username?: string | undefined
   name: string
   initials: string
-  depot?: string
+  depot?: string | undefined
   /** What this person works on: outlet for store managers, vehicle for drivers. */
-  outletId?: string
-  vehicleId?: string
-  assignment?: string
+  outletId?: string | undefined
+  vehicleId?: string | undefined
+  assignment?: string | undefined
 }

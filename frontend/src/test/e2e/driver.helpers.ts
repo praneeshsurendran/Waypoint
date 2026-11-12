@@ -83,7 +83,12 @@ export async function startAndPark(page: Page) {
   await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Confirm and start route' }).click()
   await expect(page).toHaveURL(/\/driver\/route$/)
-  await page.getByRole('link', { name: 'Open turn-by-turn demo' }).click()
+  await page
+    .getByRole('list', { name: 'Ordered delivery outlets' })
+    .getByRole('link')
+    .filter({ hasText: /OUT/ })
+    .first()
+    .click()
   await page.getByRole('button', { name: 'Confirm I’ve parked' }).click()
   await expect(page.getByRole('heading', { name: 'Arrived and safely parked' })).toBeVisible()
 }

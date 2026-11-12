@@ -1,21 +1,30 @@
 from __future__ import annotations
+from typing import NoReturn
+from sqlalchemy.orm import InstrumentedAttribute
+from pydantic import TypeAdapter
+from waypoint_contracts.admin import OutletCreate, VehicleCreate
+from waypoint_contracts.reference import OutletOut, VehicleOut
+
 import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session as DbDep
 from waypoint_network.infrastructure.db.reference import Depot, Outlet, Vehicle
 from waypoint_security import Principal as User
-from waypoint_contracts.admin import OutletCreate, VehicleCreate
 from waypoint_network.infrastructure.db.audit import log_action
 
 
 _ADMIN = None
 
 
-def _fail(code: str, message: str, http: int = status.HTTP_422_UNPROCESSABLE_CONTENT):
+def _fail(
+    code: str, message: str, http: int = status.HTTP_422_UNPROCESSABLE_CONTENT
+) -> NoReturn:
     raise HTTPException(status_code=http, detail={"code": code, "message": message})
 
 
-def _next_id(db, column, prefix: str, width: int = 3) -> str:
+def _next_id(
+    db: DbDep, column: InstrumentedAttribute[str], prefix: str, width: int = 3
+) -> str:
     highest = 0
     for (value,) in db.query(column).all():
         match = re.fullmatch(f"{prefix}(\\d+)", value or "")
@@ -24,7 +33,7 @@ def _next_id(db, column, prefix: str, width: int = 3) -> str:
     return f"{prefix}{highest + 1:0{width}d}"
 
 
-def create_outlet(body: OutletCreate, db: DbDep, admin: User = _ADMIN):
+def create_outlet(body: OutletCreate, db: DbDep, admin: User) -> OutletOut:
     _identifier_lock(db, "OUT")
     if not body.name.strip():
         _fail("INVALID_INPUT", "The outlet needs a name.")
@@ -66,10 +75,10 @@ def create_outlet(body: OutletCreate, db: DbDep, admin: User = _ADMIN):
     )
     db.commit()
     db.refresh(outlet)
-    return outlet
+    return TypeAdapter(OutletOut).validate_python(outlet)
 
 
-def create_vehicle(body: VehicleCreate, db: DbDep, admin: User = _ADMIN):
+def create_vehicle(body: VehicleCreate, db: DbDep, admin: User) -> VehicleOut:
     _identifier_lock(db, "VEH")
     if body.type not in ("truck", "van"):
         _fail("INVALID_TYPE", "Type must be truck or van.")
@@ -118,10 +127,10 @@ def create_vehicle(body: VehicleCreate, db: DbDep, admin: User = _ADMIN):
     )
     db.commit()
     db.refresh(vehicle)
-    return vehicle
+    return TypeAdapter(VehicleOut).validate_python(vehicle)
 
 
-def _identifier_lock(db, prefix):
+def _identifier_lock(db: DbDep, prefix: str) -> None:
     from sqlalchemy import text
 
     db.execute(

@@ -3,15 +3,15 @@ import type { Order, OrderStatus, Snapshot, StoreOrderInput, Temperature } from 
 
 export type OrderDraft = Snapshot['drafts'][number]
 export interface OrderFilter {
-  outletId?: string
-  status?: OrderStatus
+  outletId?: string | undefined
+  status?: OrderStatus | undefined
   /**
    * Which day's orders: the delivery being planned (default), or the day an order placed now is for.
    * They differ once the cutoff has passed, because late orders wait for the following run.
    */
-  day?: 'planning' | 'next'
+  day?: 'planning' | 'next' | undefined
   /** One exact delivery day, YYYY-MM-DD. Takes precedence over `day` when both are given. */
-  date?: string
+  date?: string | undefined
 }
 export interface IntakeStatus {
   /** True after the 4 PM cutoff: new demand becomes a draft for the next run. */
@@ -19,11 +19,11 @@ export interface IntakeStatus {
   /** True once the dispatcher publishes the plan; orders can no longer be edited. */
   published: boolean
   /** The server's current time (ISO), when the backend supplies it. Demo adapters leave it out. */
-  now?: string
+  now?: string | undefined
   /** The delivery day being planned (YYYY-MM-DD), when the backend supplies it. */
-  deliveryDate?: string
+  deliveryDate?: string | undefined
   /** The day an order placed now is delivered; after the cutoff, the following run. */
-  nextDeliveryDate?: string
+  nextDeliveryDate?: string | undefined
 }
 export interface ReceiptIssue {
   kind: 'Missing' | 'Damaged'
@@ -36,7 +36,7 @@ export interface ReceiptIssue {
 export interface OrdersApi {
   listOrders(filter?: OrderFilter): Promise<Order[]>
   /** Earlier orders for the outlet, newest delivery day first. */
-  listHistory(filter?: { outletId?: string }): Promise<Order[]>
+  listHistory(filter?: { outletId?: string | undefined }): Promise<Order[]>
   /** Brand, schedule and receiving limits for an outlet. */
   getOutletProfile(outletId: string): Promise<OutletProfile>
   listDrafts(): Promise<OrderDraft[]>

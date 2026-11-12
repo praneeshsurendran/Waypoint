@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session, sessionmaker
+from waypoint_messaging import EventPublisher
 import json
 from sqlalchemy import event, select
 from waypoint_contracts.events import EventEnvelope
@@ -8,9 +10,9 @@ from waypoint_identity.infrastructure.db.accounts import User
 OWNERS = (User,)
 
 
-def install(factory):
+def install(factory: sessionmaker[Session]) -> None:
     @event.listens_for(factory, "before_flush")
-    def collect(session, *_):
+    def collect(session: Session, *_: object) -> None:
         changed = [
             obj
             for obj in set(session.new) | set(session.dirty)
@@ -25,7 +27,7 @@ def install(factory):
         session.info.setdefault("owner_changes", []).extend(changed)
 
     @event.listens_for(factory, "after_flush_postexec")
-    def enqueue(session, *_):
+    def enqueue(session: Session, *_: object) -> None:
         for obj in session.info.pop("owner_changes", []):
             data = {
                 column.key: getattr(obj, column.key)
@@ -55,7 +57,9 @@ def install(factory):
             )
 
 
-def publish_pending(factory, publisher, limit=50):
+def publish_pending(
+    factory: sessionmaker[Session], publisher: EventPublisher, limit: int = 50
+) -> int:
     sent = 0
     for _ in range(limit):
         with factory.begin() as db:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -45,4 +46,4 @@ class Receipt(Base):
     )
     status: Mapped[str] = mapped_column(String(10), default="FULL")
 
-    order_rel: Mapped["Order"] = relationship("Order", back_populates="receipts")  # type: ignore[name-defined]
+    order_rel: Mapped["Order"] = relationship("Order", back_populates="receipts")

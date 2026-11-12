@@ -1,3 +1,7 @@
+from sqlalchemy.orm import Session
+from fastapi import UploadFile
+from waypoint_security import Actor
+from waypoint_contracts.runtime import UploadResult
 import hashlib
 import uuid
 from fastapi import HTTPException
@@ -14,7 +18,7 @@ TYPES = {
 }
 
 
-def upload(db, user, file, stop_id):
+def upload(db: Session, user: Actor, file: UploadFile, stop_id: str | None) -> UploadResult:
     if file.content_type not in TYPES:
         raise HTTPException(
             415,
@@ -78,14 +82,16 @@ def upload(db, user, file, stop_id):
         )
     )
     db.commit()
-    return {"path": "/uploads/" + key}
+    return UploadResult(path="/uploads/" + key)
 
 
-def authorize_proof(db, proof, user):
+def authorize_proof(db: Session, proof: ProofObject, user: Actor) -> None:
     if proof.owner_id == user.id or user.role in ("DISPATCHER", "ADMIN"):
         return
     if proof.stop_id is not None:
         stop = db.get(Stop, proof.stop_id)
+        if stop is None:
+            raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Delivery not found."})
         if user.role == "STORE_MANAGER" and user.outlet_id == stop.outlet_id:
             return
         if user.role in ("DRIVER", "LOADER"):

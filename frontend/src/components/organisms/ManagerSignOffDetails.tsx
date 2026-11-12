@@ -6,8 +6,8 @@ export function ManagerSignOffDetails({
   signature,
   signOff,
 }: {
-  signature?: Blob
-  signOff?: ManagerSignOff
+  signature?: Blob | undefined
+  signOff?: ManagerSignOff | undefined
 }) {
   const url = useBlobUrl(signature)
   if (!signOff || !url)

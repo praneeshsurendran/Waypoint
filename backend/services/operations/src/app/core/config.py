@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     pool_max_overflow: int = 5
 
     @model_validator(mode="after")
-    def validate_production(self):
+    def validate_production(self) -> "Settings":
         if self.environment == "production":
             if self.storage_backend != "s3" or not self.pod_bucket:
                 raise ValueError("Production requires private S3 proof storage")

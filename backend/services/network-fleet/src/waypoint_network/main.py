@@ -1,4 +1,6 @@
+from collections.abc import AsyncIterator
 import os
+from waypoint_contracts.runtime import LiveHealth, ReadyHealth
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -7,12 +9,12 @@ from waypoint_network.bootstrap import SessionLocal
 from waypoint_network.api.v1.routers import reference, admin
 
 
-def create_app():
+def create_app() -> FastAPI:
     from contextlib import asynccontextmanager
     from waypoint_network.bootstrap import engine
 
     @asynccontextmanager
-    async def lifespan(app):
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             yield
         finally:
@@ -26,23 +28,30 @@ def create_app():
     ]
     if "*" in origins:
         raise ValueError("Explicit CORS origins are required")
+    install(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
-        expose_headers=["X-Correlation-ID"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "X-Correlation-ID",
+            "traceparent",
+        ],
+        expose_headers=["X-Correlation-ID", "Retry-After", "traceparent"],
     )
-    install(app)
     app.include_router(reference.router, prefix="/api/v1")
     app.include_router(admin.router, prefix="/api/v1")
 
-    @app.get("/health/live")
-    def live():
+    @app.get("/health/live", response_model=LiveHealth)
+    def live() -> dict[str, str]:
         return {"status": "ok", "service": "network-fleet"}
 
-    @app.get("/health/ready")
-    def ready():
+    @app.get(
+        "/health/ready", response_model=ReadyHealth, response_model_exclude_unset=True
+    )
+    def ready() -> dict[str, str]:
         try:
             with SessionLocal() as db:
                 db.execute(text("SELECT 1"))

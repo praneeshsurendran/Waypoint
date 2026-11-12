@@ -8,7 +8,7 @@ export interface DemandWeek {
   chilledM3: number
   isEventWeek: boolean
   /** True for the weeks in the booklet's test horizon. */
-  inTestHorizon?: boolean
+  inTestHorizon?: boolean | undefined
 }
 
 /** Vehicles and reefers a depot needs for one week's forecast volume, against its fleet. */

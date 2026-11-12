@@ -7,6 +7,7 @@ All outlets generated from these coordinates are marked synthetic in the README.
 
 from __future__ import annotations
 
+
 import random
 
 # Approximate centroid lat/lng for every district in outlets.csv.

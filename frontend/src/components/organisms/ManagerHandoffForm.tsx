@@ -19,7 +19,7 @@ export function ManagerHandoffForm({
   expected: number
   orders: Order[]
   next: string
-  ownDevice?: boolean
+  ownDevice?: boolean | undefined
 }) {
   const form = useManagerHandoffForm(draft, expected, orders, next)
   return (

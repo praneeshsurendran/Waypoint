@@ -11,5 +11,5 @@ export interface NewVehicle {
   weightCapacity: number
   volumeCapacity: number
   /** Number plate, optional. */
-  registration?: string
+  registration?: string | undefined
 }

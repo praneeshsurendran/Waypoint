@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from fastapi.params import Depends as Dependency
+
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,7 @@ DbDep = Annotated[Session, Depends(get_db)]
 def _get_current_user(
     db: DbDep,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+    request: Request,
 ) -> User:
     if not credentials:
         raise HTTPException(
@@ -44,13 +47,16 @@ def _get_current_user(
                 "message": "User not found or deactivated.",
             },
         )
+    from waypoint_runtime.rate_limit import enforce_user
+
+    enforce_user(request, user.id)
     return user
 
 
 CurrentUser = Annotated[User, Depends(_get_current_user)]
 
 
-def require_role(*roles: str):
+def require_role(*roles: str) -> Dependency:
     """Return a dependency that enforces the user has one of the given roles."""
 
     def _check(current_user: CurrentUser) -> User:

@@ -1,8 +1,9 @@
+import { required } from '@/test/fixtures/required'
 import { describe, expect, it } from 'vitest'
 import { createSeed } from '@/infrastructure/demo/seed'
 import { deliveryWindow, freshWindowErrors, receivingWindowEnd } from '@/utils/deliveryWindow'
 const snapshot = createSeed(),
-  stop = snapshot.stops[0]
+  stop = required(snapshot.stops[0])
 describe('receiving deadlines in Sri Lanka', () => {
   it('caps fresh goods at 08:00 and detects late ETA, approaching and missed windows', () => {
     const late = { ...stop, window: '07:00–10:00', eta: '08:15' }

@@ -1,10 +1,10 @@
-import * as ordersApi from '@/api/endpoints/orders'
-import * as plansApi from '@/api/endpoints/plans'
 import * as deferralsApi from '@/api/endpoints/deferrals'
 import * as loadingApi from '@/api/endpoints/loading'
+import * as ordersApi from '@/api/endpoints/orders'
+import * as plansApi from '@/api/endpoints/plans'
+import { mapOrder, mapTrip, toBackendReason } from '@/mappers/operations'
 import type { PlanningApi } from '@/types/api/planning'
-import type { ApiPlan, ApiOrder } from '@/types/api/responses'
-import { mapTrip, mapOrder, toBackendReason } from '@/mappers/operations'
+import type { ApiPlan } from '@/types/api/responses'
 
 import type { Order } from '@/types/models'
 
@@ -12,19 +12,15 @@ export function createHttpPlanningApi(): PlanningApi {
   return {
     async getPlan() {
       const [intakeResp, draftPlans, pubPlans] = await Promise.all([
-        ordersApi
-          .getOrdersIntakeStatus<{ cutoff_closed: boolean; published: boolean }>()
-          .catch(() => ({ cutoff_closed: false, published: false })),
-        plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[]),
-        plansApi.getPublishedPlans<ApiPlan[]>().catch(() => [] as ApiPlan[]),
+        ordersApi.getOrdersIntakeStatus().catch(() => ({ cutoff_closed: false, published: false })),
+        plansApi.getDraftPlans().catch(() => [] as ApiPlan[]),
+        plansApi.getPublishedPlans().catch(() => [] as ApiPlan[]),
       ])
 
       const plan = draftPlans[0] ?? pubPlans[0]
-      const trips = plan?.trips.map(mapTrip) ?? []
+      const trips = plan?.trips?.map(mapTrip) ?? []
       const orders = await ordersApi
-        .getOrdersWithDateFilter<ApiOrder[]>(
-          plan?.delivery_date ? `?date=${plan.delivery_date}` : '',
-        )
+        .getOrdersWithDateFilter(plan?.delivery_date ? `?date=${plan.delivery_date}` : '')
         .then((os) => os.map((o) => mapOrder(o)))
         .catch(() => [] as Order[])
 
@@ -50,7 +46,7 @@ export function createHttpPlanningApi(): PlanningApi {
 
     async autoAllocate() {
       await plansApi.postPlansAutoPlan({ method: 'POST' })
-      const plans = await plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[])
+      const plans = await plansApi.getDraftPlans().catch(() => [] as ApiPlan[])
       if (plans[0]) {
         try {
           localStorage.removeItem(`waypoint.plan.reviewed.${plans[0].id}`)
@@ -61,10 +57,10 @@ export function createHttpPlanningApi(): PlanningApi {
     },
 
     async allocate(orderId, vehicleId, trip) {
-      const plans = await plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[])
+      const plans = await plansApi.getDraftPlans().catch(() => [] as ApiPlan[])
       const plan = plans[0]
       if (!plan) throw new Error('No draft plan to edit')
-      const targetTrip = plan.trips.find(
+      const targetTrip = plan.trips?.find(
         (t) => t.vehicle_id === vehicleId && t.trip_number === trip,
       )
       if (!targetTrip) throw new Error('Trip not found')
@@ -75,12 +71,12 @@ export function createHttpPlanningApi(): PlanningApi {
       }
       await plansApi.patchPlans(plan.id, {
         method: 'PATCH',
-        body: JSON.stringify({ moves: [{ order_id: Number(orderId), to_trip_id: targetTrip.id }] }),
+        body: { moves: [{ order_id: Number(orderId), to_trip_id: targetTrip.id }] },
       })
     },
 
     async unallocate(orderId) {
-      const plans = await plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[])
+      const plans = await plansApi.getDraftPlans().catch(() => [] as ApiPlan[])
       const plan = plans[0]
       // Say so rather than reporting success for a removal that never happened.
       if (!plan) throw new Error('No draft plan to edit. A published plan cannot be changed.')
@@ -91,23 +87,23 @@ export function createHttpPlanningApi(): PlanningApi {
       }
       await plansApi.patchPlans(plan.id, {
         method: 'PATCH',
-        body: JSON.stringify({ moves: [{ order_id: Number(orderId), to_trip_id: null }] }),
+        body: { moves: [{ order_id: Number(orderId), to_trip_id: null }] },
       })
     },
 
     async defer(orderId, reason) {
       await deferralsApi.postDeferrals({
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           order_id: Number(orderId),
           reason_code: toBackendReason(reason),
           explanation: reason,
-        }),
+        },
       })
     },
 
     async reviewAllocation() {
-      const plans = await plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[])
+      const plans = await plansApi.getDraftPlans().catch(() => [] as ApiPlan[])
       const plan = plans[0]
       if (plan) {
         try {
@@ -120,7 +116,7 @@ export function createHttpPlanningApi(): PlanningApi {
     },
 
     async publish() {
-      const plans = await plansApi.getDraftPlans<ApiPlan[]>().catch(() => [] as ApiPlan[])
+      const plans = await plansApi.getDraftPlans().catch(() => [] as ApiPlan[])
       const plan = plans[0]
       if (!plan) throw new Error('No draft plan to publish')
       await plansApi.publishPlan(plan.id, { method: 'POST' })

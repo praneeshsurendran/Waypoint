@@ -1,9 +1,10 @@
+import { generatePassword } from '@/schemas/administration/credentials'
 import * as adminApi from '@/api/endpoints/admin'
-import * as referenceApi from '@/api/endpoints/reference'
 import * as authApi from '@/api/endpoints/auth'
-import type { Workspace, TeamMember, AuditEntry, MemberActivity } from '@/types/models'
-import type { ApiAuditRow, ApiAdminUser } from '@/types/api/responses'
+import * as referenceApi from '@/api/endpoints/reference'
+import type { ApiAuditRow } from '@/types/api/responses'
 import type { TeamApi } from '@/types/api/team'
+import type { AuditEntry, MemberActivity, TeamMember, Workspace } from '@/types/models'
 
 import { getUser } from '@/infrastructure/storage/authSession'
 
@@ -60,12 +61,10 @@ export function createHttpTeamApi(): TeamApi {
     )
   }
 
-  const users = () => adminApi.getAdminUsers<ApiAdminUser[]>()
-  const audit = () => adminApi.getAuditLog<ApiAuditRow[]>()
+  const users = () => adminApi.getAdminUsers()
+  const audit = () => adminApi.getAuditLog()
   const patch = (memberId: string, body: Record<string, unknown>) =>
-    adminApi
-      .patchAdminUsers(memberId, { method: 'PATCH', body: JSON.stringify(body) })
-      .then(() => undefined)
+    adminApi.patchAdminUsers(memberId, { method: 'PATCH', body: body }).then(() => undefined)
 
   return {
     async listMembers() {
@@ -73,11 +72,7 @@ export function createHttpTeamApi(): TeamApi {
       if (role !== 'ADMIN') {
         // Everyone else may only see who receives at each outlet, and only the operating roles.
         if (!['DISPATCHER', 'DRIVER', 'LOADER'].includes(role)) return []
-        const managers = await referenceApi
-          .getReferenceStoreManagers<
-            Array<{ id: number; full_name: string; phone: string | null; outlet_id: string }>
-          >()
-          .catch(() => [])
+        const managers = await referenceApi.getReferenceStoreManagers().catch(() => [])
         return managers.map((m): TeamMember => ({
           id: String(m.id),
           name: m.full_name,
@@ -86,16 +81,14 @@ export function createHttpTeamApi(): TeamApi {
           status: 'Active',
           onRoute: false,
           mobile: m.phone ?? undefined,
-          outletId: m.outlet_id,
-          assignment: m.outlet_id,
+          outletId: m.outlet_id ?? undefined,
+          assignment: m.outlet_id ?? undefined,
         }))
       }
       const [people, outlets, vehicles] = await Promise.all([
         users(),
-        referenceApi.getReferenceOutlets<ApiOutlet[]>().catch(() => [] as ApiOutlet[]),
-        referenceApi
-          .getReferenceVehicles<Array<{ vehicle_id: string; depot_code: string }>>()
-          .catch(() => []),
+        referenceApi.getReferenceOutlets().catch(() => [] as ApiOutlet[]),
+        referenceApi.getReferenceVehicles().catch(() => []),
       ])
       const outletDepot = new Map(outlets.map((o) => [o.outlet_id, o.depot_code]))
       const vehicleDepot = new Map(vehicles.map((v) => [v.vehicle_id, v.depot_code]))
@@ -165,25 +158,26 @@ export function createHttpTeamApi(): TeamApi {
     async createUser(user) {
       await adminApi.postAdminUsers({
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           username: user.username,
           password: user.password,
           full_name: user.name,
           email: user.email,
           phone: user.mobile || null,
           role: apiRoleOf[user.role],
-          outlet_id: user.role === 'store-manager' ? /OUT\d+/.exec(user.assignment)?.[0] : null,
-          vehicle_id: user.role === 'driver' ? /VEH\d+/.exec(user.assignment)?.[0] : null,
+          outlet_id:
+            user.role === 'store-manager' ? (/OUT\d+/.exec(user.assignment)?.[0] ?? null) : null,
+          vehicle_id: user.role === 'driver' ? (/VEH\d+/.exec(user.assignment)?.[0] ?? null) : null,
           depot_id: user.role === 'loader' || user.role === 'dispatcher' ? user.depot : null,
-        }),
+        },
       })
     },
     completeInvitation: unsupported('Completing an invitation'),
     async resetAccess(memberId, password) {
-      const temporary = password ?? `Wp-${Math.random().toString(36).slice(2, 10)}`
+      const temporary = password ?? generatePassword()
       await adminApi.resetUserPassword(memberId, {
         method: 'POST',
-        body: JSON.stringify({ password: temporary }),
+        body: { password: temporary },
       })
     },
     updateContact: (memberId, contact) => {
@@ -191,7 +185,7 @@ export function createHttpTeamApi(): TeamApi {
       // People change their own details; an administrator changes anyone's.
       return getUser()?.role === 'ADMIN'
         ? patch(memberId, body)
-        : authApi.patchAuthMe({ method: 'PATCH', body: JSON.stringify(body) }).then(() => undefined)
+        : authApi.patchAuthMe({ method: 'PATCH', body: body }).then(() => undefined)
     },
     requestAccountChange: unsupported('Account change requests'),
     async changeAssignment(memberId, depot, assignment) {
@@ -210,7 +204,7 @@ export function createHttpTeamApi(): TeamApi {
       adminApi
         .reassignUserTrip(fromMemberId, {
           method: 'POST',
-          body: JSON.stringify({ to_user_id: Number(toMemberId) }),
+          body: { to_user_id: Number(toMemberId) },
         })
         .then(() => undefined),
     updateRole: (memberId, role) => patch(memberId, { role: apiRoleOf[role] }),

@@ -1,16 +1,15 @@
-import { photoDigest } from '@/utils/photoDigest'
-import type { RouteEvent } from '@/types/routeHistory'
-import type { DeliverySyncEvent } from '@/types/deliverySync'
+import { ApiError } from '@/api/client/apiErrors'
 import { fetchEvidenceBlob } from '@/api/client/assets'
 import * as driverApi from '@/api/endpoints/driver'
 import * as ordersApi from '@/api/endpoints/orders'
-import { ApiError } from '@/api/client/apiErrors'
-import type { RouteState } from '@/types/api/delivery'
-import type { DeliveryApi } from '@/types/api/delivery'
-import { getUser } from '@/infrastructure/storage/authSession'
-import type { ApiTrip, ApiStop } from '@/types/api/responses'
 import { outletReferences } from '@/infrastructure/adapters/http/reference'
+import { getUser } from '@/infrastructure/storage/authSession'
 import { mapStop } from '@/mappers/operations'
+import type { DeliveryApi, RouteState } from '@/types/api/delivery'
+import type { ApiStop } from '@/types/api/responses'
+import type { DeliverySyncEvent } from '@/types/deliverySync'
+import type { RouteEvent } from '@/types/routeHistory'
+import { photoDigest } from '@/utils/photoDigest'
 
 import { localDb } from '@/infrastructure/storage/httpDatabase'
 
@@ -81,7 +80,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
       const cached = await localDb.httpRoutes.get(user.id)
       if (!navigator.onLine) return localRouteView(cached?.route ?? empty, user.id)
       try {
-        const resp = await driverApi.getDriverTripsCurrent<ApiTrip | null>()
+        const resp = await driverApi.getDriverTripsCurrent()
         const refs = resp ? await outletReferences() : undefined
         const route: RouteState = resp
           ? {
@@ -108,18 +107,18 @@ export function createHttpDeliveryApi(): DeliveryApi {
       if (getUser()?.role === 'ADMIN') return []
       const refs = await outletReferences()
       if (filter.outletId) {
-        const stops = await ordersApi.getOutletStops<ApiStop[]>(filter.outletId).catch(() => null)
+        const stops = await ordersApi.getOutletStops(filter.outletId).catch(() => null)
         if (stops) {
           return stops.map((s) => mapStop(s, refs))
         }
       }
-      const resp = await driverApi.getDriverTripsCurrent<ApiTrip>().catch(() => null)
+      const resp = await driverApi.getDriverTripsCurrent().catch(() => null)
       if (resp?.stops) {
         return resp.stops
           .map((s) => mapStop(s, refs))
           .filter((s) => !filter.outletId || s.outlet === filter.outletId)
       }
-      const stops = await ordersApi.getOrdersStops<ApiStop[]>().catch(() => [] as ApiStop[])
+      const stops = await ordersApi.getOrdersStops().catch(() => [] as ApiStop[])
       return stops.map((s) => mapStop(s, refs))
     },
 
@@ -150,6 +149,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
     async saveProof(stopId, proof) {
       const id = crypto.randomUUID()
       await localDb.evidence.put({
+        actorId: getUser()?.id,
         id,
         kind: 'delivery',
         entityId: stopId,
@@ -184,6 +184,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
     async saveAttemptProof(stopId, photo, issue) {
       const id = crypto.randomUUID()
       await localDb.evidence.put({
+        actorId: getUser()?.id,
         id,
         kind: 'attempt',
         entityId: stopId,
@@ -234,6 +235,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
       const createdAt = new Date().toISOString()
       await localDb.transaction('rw', localDb.evidence, localDb.queue, async () => {
         await localDb.evidence.put({
+          actorId: getUser()?.id,
           id,
           kind: 'delivery',
           entityId: stopId,
@@ -281,7 +283,11 @@ export function createHttpDeliveryApi(): DeliveryApi {
           .equals(actorId ?? -1)
           .reverse()
           .sortBy('at')
-      const remote = await driverApi.getDriverHistory<RouteEvent[]>()
+      const remote: RouteEvent[] = (await driverApi.getDriverHistory()).map((event) => ({
+        ...event,
+        stopId: event.stopId ?? undefined,
+        outletId: event.outletId ?? undefined,
+      }))
       await localDb.httpRouteHistory.bulkPut(remote.map((event) => ({ ...event, actorId })))
       return remote
     },
@@ -354,16 +360,18 @@ export function createHttpDeliveryApi(): DeliveryApi {
     },
 
     async getEvidence(id) {
+      const actorId = getUser()?.id
       const found = await localDb.evidence.get(id)
-      if (found) return found
+      if (found && found.actorId === actorId) return found
       if (id && (id.startsWith('http') || id.startsWith('/uploads'))) {
         try {
           const url = id.startsWith('http')
             ? id
             : `${(import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '')}${id}`
           const blob = await fetchEvidenceBlob(url)
-          if (blob) {
+          if (blob && getUser()?.id === actorId) {
             const synthetic = {
+              actorId,
               id,
               kind: 'delivery' as const,
               entityId: '',
@@ -441,7 +449,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
               const form = new FormData()
               form.append('file', evidence.photo, evidence.fileName || 'delivery-proof.jpg')
               form.append('stop_id', item.stopId)
-              const uploaded = await driverApi.postDriverUploads<{ path: string }>({
+              const uploaded = await driverApi.postDriverUploads({
                 method: 'POST',
                 body: form,
               })
@@ -463,7 +471,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
               const form = new FormData()
               form.append('file', evidence.signature, 'signature.png')
               form.append('stop_id', item.stopId)
-              const uploaded = await driverApi.postDriverUploads<{ path: string }>({
+              const uploaded = await driverApi.postDriverUploads({
                 method: 'POST',
                 body: form,
               })
@@ -488,11 +496,9 @@ export function createHttpDeliveryApi(): DeliveryApi {
         // Step 3: Dispatch batch to /driver/sync
         try {
           const results = events.length
-            ? await driverApi.postDriverSync<
-                Array<{ client_op_id: string; accepted: boolean; message?: string }>
-              >({
+            ? await driverApi.postDriverSync({
                 method: 'POST',
-                body: JSON.stringify({ events }),
+                body: { events },
               })
             : []
 
@@ -510,7 +516,7 @@ export function createHttpDeliveryApi(): DeliveryApi {
               for (const order of item.receipt.orders) {
                 await ordersApi.confirmOrderReceipt(order.orderId, {
                   method: 'POST',
-                  body: JSON.stringify(order.body),
+                  body: order.body,
                 })
               }
               item.status = 'accepted'

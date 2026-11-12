@@ -75,14 +75,14 @@ export function mapOrder(o: ApiOrder, published = false): Order {
     cases: o.total_cases ?? 0,
     status: isDeferred ? 'Deferred' : orderStatus(o.status, isAllocated, published),
     priority: o.priority,
-    vehicleId: o.vehicle_id,
-    trip: o.trip,
-    deferralReason: toFrontendReason(o.deferral_reason),
-    receipt: mapReceiptStatus(o.receipt_status),
-    scheduledAt: o.scheduled_at,
-    departedAt: o.departed_at,
+    vehicleId: o.vehicle_id ?? undefined,
+    trip: o.trip ?? undefined,
+    deferralReason: toFrontendReason(o.deferral_reason ?? undefined),
+    receipt: mapReceiptStatus(o.receipt_status ?? undefined),
+    scheduledAt: o.scheduled_at ?? undefined,
+    departedAt: o.departed_at ?? undefined,
     deferralAcknowledged: Boolean(o.deferral_acknowledged_at),
-    deferralAcknowledgedAt: o.deferral_acknowledged_at,
+    deferralAcknowledgedAt: o.deferral_acknowledged_at ?? undefined,
     receiptReport: o.receipt_report
       ? {
           kind: o.receipt_report.kind as 'Missing' | 'Damaged',
@@ -93,9 +93,9 @@ export function mapOrder(o: ApiOrder, published = false): Order {
         }
       : undefined,
     placedAt: o.placed_at ?? o.created_at,
-    deliveredAt: o.delivered_at,
+    deliveredAt: o.delivered_at ?? undefined,
     deliveryDate: o.delivery_date,
-    cancelledAt: o.status === 'CANCELLED' ? (o.updated_at ?? o.created_at) : undefined,
+    cancelledAt: o.status === 'CANCELLED' ? (o.updated_at ?? o.created_at ?? undefined) : undefined,
   }
 }
 
@@ -127,7 +127,7 @@ export function mapStop(s: ApiStop, refs?: Map<string, OutletRef>): Stop {
     orderIds: (s.order_ids ?? []).map(String),
     cases: s.total_cases ?? 0,
     status: (statusMap[s.status] ?? 'Upcoming') as Stop['status'],
-    proofId: s.proof_id,
+    proofId: s.proof_id ?? undefined,
   }
 }
 

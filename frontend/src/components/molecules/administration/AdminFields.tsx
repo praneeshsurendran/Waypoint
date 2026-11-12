@@ -11,10 +11,10 @@ export function AdminIntro({
   lead,
   aside,
 }: {
-  kicker?: string
+  kicker?: string | undefined
   title: string
-  lead?: string
-  aside?: ReactNode
+  lead?: string | undefined
+  aside?: ReactNode | undefined
 }) {
   return (
     <header className="ad-intro">
@@ -35,8 +35,8 @@ export function Field({
   children,
 }: {
   label: string
-  hint?: string
-  error?: string
+  hint?: string | undefined
+  error?: string | undefined
   children: ReactNode
 }) {
   return (

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -77,8 +78,8 @@ class Outlet(Base):
     lng: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     depot_rel: Mapped["Depot"] = relationship("Depot", back_populates="outlets")
-    orders: Mapped[list["Order"]] = relationship("Order", back_populates="outlet_rel")  # type: ignore[name-defined]
-    stops: Mapped[list["Stop"]] = relationship("Stop", back_populates="outlet_rel")  # type: ignore[name-defined]
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="outlet_rel")
+    stops: Mapped[list["Stop"]] = relationship("Stop", back_populates="outlet_rel")
 
 
 class Vehicle(Base):
@@ -104,7 +105,7 @@ class Vehicle(Base):
     depot_code: Mapped[str] = mapped_column(String(50), ForeignKey("depots.code"))
 
     depot_rel: Mapped["Depot"] = relationship("Depot", back_populates="vehicles")
-    trips: Mapped[list["Trip"]] = relationship("Trip", back_populates="vehicle_rel")  # type: ignore[name-defined]
+    trips: Mapped[list["Trip"]] = relationship("Trip", back_populates="vehicle_rel")
     weekly_fuel: Mapped[list["VehicleWeeklyFuel"]] = relationship(
         "VehicleWeeklyFuel", back_populates="vehicle_rel"
     )

@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import { test, expect } from '@playwright/test'
 import { mockMapTiles } from '../map.helpers'
 import {
@@ -31,7 +32,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Delivered with photo' })).toBeVisible()
     const stored = await storedDriverState(page)
     expect(stored.statuses[0]).toBe('Delivered')
-    expect(stored.evidence[0].accepted).toBe(true)
+    expect(required(stored.evidence[0]).accepted).toBe(true)
     expect(stored.drafts).toBe(0)
     expect(stored.receipts[0]).toBe('Confirmed')
     expect(stored.receipts.filter((receipt) => receipt === 'Confirmed')).toHaveLength(1)
@@ -58,9 +59,9 @@ test('offline proof stays pending, interrupted upload is retained, and explicit 
   await page.reload()
   let stored = await storedDriverState(page)
   expect(stored.statuses[0]).toBe('Proof pending')
-  expect(stored.queue[0].status).toBe('pending')
-  expect(stored.evidence[0].accepted).toBe(false)
-  const saved = stored.evidence[0]
+  expect(required(stored.queue[0]).status).toBe('pending')
+  expect(required(stored.evidence[0]).accepted).toBe(false)
+  const saved = required(stored.evidence[0])
   await driverScenario(page, { simulatedOffline: false })
   await expect(page.getByRole('heading', { name: 'Upload interrupted' })).toBeVisible()
   await driverScenario(page, { syncOutcome: 'accepted' })
@@ -88,12 +89,12 @@ test('route revision review preserves the original proof and resumes acknowledge
   await expect(page.getByRole('heading', { name: 'All records synced' })).toBeVisible()
   const after = await storedDriverState(page)
   expect(after.evidence[0]).toMatchObject({
-    id: before.evidence[0].id,
-    size: before.evidence[0].size,
+    id: required(before.evidence[0]).id,
+    size: required(before.evidence[0]).size,
     revision: 3,
     accepted: true,
   })
-  expect(after.queue[0].revision).toBe(4)
+  expect(required(after.queue[0]).revision).toBe(4)
 })
 
 test('camera recovery and retake require manager sign-off for partial acceptance', async ({
@@ -409,7 +410,7 @@ test('changing reviewed handoff details invalidates the signature and persists t
   await expect(page.getByText('Corrected remarks: checked all items again.')).toBeVisible()
   await confirmProof(page)
   await expect(page.getByRole('heading', { name: 'All records synced' })).toBeVisible()
-  const saved = (await storedDriverState(page)).evidence[0]
+  const saved = required((await storedDriverState(page)).evidence[0])
   expect(saved.signatureSize).toBeGreaterThan(0)
   expect(saved.photoDigest).toMatch(/^[a-f0-9]{64}$/)
 })

@@ -1,15 +1,15 @@
-import { request } from '@/api/client/apiClient'
-import type { LoginResponse } from '@/types/api/reference'
+/** Backend OpenAPI owns these contracts; responses are validated before returning. */
+import { contractRequest } from '@/api/client/contractClient'
+import type { ApiResponse, ApiOptions as ContractOptions } from '@/types/api/contracts'
 
-export const authApi = {
-  login: (username: string, password: string) =>
-    request<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    }),
+export function patchAuthMe(
+  options: ContractOptions<'/auth/me', 'patch'>,
+): Promise<ApiResponse<'/auth/me', 'patch'>> {
+  return contractRequest('/auth/me', 'patch', options)
 }
 
-/** Backend auth transport; callers supply their typed response projection. */
-export function patchAuthMe<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/auth/me', options)
+export const authApi = {
+  login(username: string, password: string): Promise<ApiResponse<'/auth/login', 'post'>> {
+    return contractRequest('/auth/login', 'post', { body: { username, password } })
+  },
 }

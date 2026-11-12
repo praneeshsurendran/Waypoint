@@ -1,31 +1,48 @@
-import { request } from '@/api/client/apiClient'
+/** Backend OpenAPI owns these contracts; responses are validated before returning. */
+import { contractRequest } from '@/api/client/contractClient'
+import type { ApiResponse, ApiOptions as ContractOptions } from '@/types/api/contracts'
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function getDraftPlans<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/plans?status=DRAFT', options)
+export function getDraftPlans(
+  options?: ContractOptions<'/plans', 'get'>,
+): Promise<ApiResponse<'/plans', 'get'>> {
+  return contractRequest('/plans', 'get', { ...options, query: 'status=DRAFT' })
 }
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function getPublishedPlans<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/plans?status=PUBLISHED', options)
+export function getPublishedPlans(
+  options?: ContractOptions<'/plans', 'get'>,
+): Promise<ApiResponse<'/plans', 'get'>> {
+  return contractRequest('/plans', 'get', { ...options, query: 'status=PUBLISHED' })
 }
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function postPlansAutoPlan<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/plans/auto-plan', options)
+export function postPlansAutoPlan(
+  options?: ContractOptions<'/plans/auto-plan', 'post'>,
+): Promise<ApiResponse<'/plans/auto-plan', 'post'>> {
+  return contractRequest('/plans/auto-plan', 'post', options ?? {})
 }
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function patchPlans<T = unknown>(id: string | number, options?: RequestInit): Promise<T> {
-  return request<T>(`/plans/${id}`, options)
+export function patchPlans(
+  id: string | number,
+  options: ContractOptions<'/plans/{plan_id}', 'patch'>,
+): Promise<ApiResponse<'/plans/{plan_id}', 'patch'>> {
+  return contractRequest('/plans/{plan_id}', 'patch', { ...options, params: { plan_id: id } })
 }
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function validatePlan<T = unknown>(id: string | number, options?: RequestInit): Promise<T> {
-  return request<T>(`/plans/${id}/validate`, options)
+export function validatePlan(
+  id: string | number,
+  options?: ContractOptions<'/plans/{plan_id}/validate', 'post'>,
+): Promise<ApiResponse<'/plans/{plan_id}/validate', 'post'>> {
+  return contractRequest('/plans/{plan_id}/validate', 'post', {
+    ...options,
+    params: { plan_id: id },
+  })
 }
 
-/** Backend plans transport; callers supply their typed response projection. */
-export function publishPlan<T = unknown>(id: string | number, options?: RequestInit): Promise<T> {
-  return request<T>(`/plans/${id}/publish`, options)
+export function publishPlan(
+  id: string | number,
+  options?: ContractOptions<'/plans/{plan_id}/publish', 'post'>,
+): Promise<ApiResponse<'/plans/{plan_id}/publish', 'post'>> {
+  return contractRequest('/plans/{plan_id}/publish', 'post', {
+    ...options,
+    params: { plan_id: id },
+  })
 }

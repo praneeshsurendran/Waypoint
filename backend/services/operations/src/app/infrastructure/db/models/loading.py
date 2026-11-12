@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -47,4 +48,4 @@ class LoadCheck(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    trip_rel: Mapped["Trip"] = relationship("Trip", back_populates="load_checks")  # type: ignore[name-defined]
+    trip_rel: Mapped["Trip"] = relationship("Trip", back_populates="load_checks")

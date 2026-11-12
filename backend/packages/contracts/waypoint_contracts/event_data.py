@@ -1,14 +1,37 @@
 """Version-1 integration payloads. Additive fields are accepted; required identity is checked."""
 
 from datetime import date
-from typing import Any, Literal
-from pydantic import BaseModel, Field
+from typing import Literal
+from pydantic import Field, JsonValue, model_validator
+from waypoint_contracts.common import ContractModel as BaseModel
 
 
 class ReferenceChange(BaseModel):
     entity: Literal["depots", "outlets", "vehicles", "calendar_days", "users"]
-    record: dict[str, Any]
+    record: dict[str, JsonValue]
     revision: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validate_record(self) -> "ReferenceChange":
+        from waypoint_contracts.reference import (
+            DepotOut,
+            OutletOut,
+            VehicleOut,
+            CalendarDayOut,
+        )
+        from waypoint_contracts.auth import UserProfile
+
+        schemas: dict[str, type[BaseModel]] = {
+            "depots": DepotOut,
+            "outlets": OutletOut,
+            "vehicles": VehicleOut,
+            "calendar_days": CalendarDayOut,
+            "users": UserProfile,
+        }
+        schemas[self.entity].model_validate(self.record)
+        if "password_hash" in self.record:
+            raise ValueError("credentials must never enter an integration payload")
+        return self
 
 
 class OrderChange(BaseModel):

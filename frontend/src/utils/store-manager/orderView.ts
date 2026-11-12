@@ -45,15 +45,15 @@ export function kindSlash(order: Kinded) {
   return order.temperature === 'Chilled' ? 'Fresh / Chilled' : 'Fresh / Dry'
 }
 /** What the brand counts in: cases of groceries, cartons of garments, appliance items. */
-export const unitOf = (order: { brand?: Order['brand'] }) =>
+export const unitOf = (order: { brand?: Order['brand'] | undefined }) =>
   order.brand === 'Style' ? 'carton' : order.brand === 'Tech' ? 'item' : 'case'
-export const countText = (count: number, order: { brand?: Order['brand'] }) =>
+export const countText = (count: number, order: { brand?: Order['brand'] | undefined }) =>
   `${count} ${unitOf(order)}${count === 1 ? '' : 's'}`
 
 /** Receiving windows default to two hours when the order doesn't record an end. */
 const DEFAULT_WINDOW_MINUTES = 120
 export function addMinutes(clock: string, minutes: number) {
-  const [h, m] = clock.split(':').map(Number)
+  const [h = Number.NaN, m = Number.NaN] = clock.split(':').map(Number)
   const total = Math.min(23 * 60 + 59, h * 60 + m + minutes)
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
@@ -77,11 +77,11 @@ export const quantityText = (item: {
   cases: number
   weight: number
   volume: number
-  brand?: Order['brand']
+  brand?: Order['brand'] | undefined
 }) => `${countText(item.cases, item)} · ${number(item.weight)} kg · ${number(item.volume)} m³`
 
 /** What the store sees: allocation stays private until the dispatcher publishes the plan. */
-export function storeStatus(order: Order & { pendingSync?: boolean }) {
+export function storeStatus(order: Order & { pendingSync?: boolean | undefined }) {
   if (order.cancelledAt) return 'Cancelled'
   if (order.pendingSync && order.status === 'Confirmed') return 'Waiting to send'
   switch (order.status) {

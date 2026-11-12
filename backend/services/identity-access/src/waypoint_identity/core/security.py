@@ -28,6 +28,8 @@ def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> st
     settings = get_settings()
     payload: dict[str, Any] = {
         "sub": subject,
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
         "iat": dt.datetime.now(dt.timezone.utc),
         "exp": dt.datetime.now(dt.timezone.utc)
         + dt.timedelta(minutes=settings.jwt_expire_minutes),
@@ -44,7 +46,9 @@ def decode_access_token(token: str) -> dict[str, Any]:
             token,
             settings.jwt_secret,
             algorithms=[settings.jwt_algorithm],
-            options={"require": ["exp", "iat", "sub"]},
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+            options={"require": ["exp", "iat", "sub", "iss", "aud"]},
         )
     except jwt.InvalidSignatureError:
         if not settings.jwt_previous_secret:
@@ -53,5 +57,7 @@ def decode_access_token(token: str) -> dict[str, Any]:
             token,
             settings.jwt_previous_secret,
             algorithms=[settings.jwt_algorithm],
-            options={"require": ["exp", "iat", "sub"]},
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+            options={"require": ["exp", "iat", "sub", "iss", "aud"]},
         )

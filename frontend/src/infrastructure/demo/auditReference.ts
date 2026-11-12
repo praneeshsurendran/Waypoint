@@ -1,7 +1,7 @@
 import type { AuditEntry } from '@/types/models'
 
 /** Only the seven records visible in the source are supplied as identities. */
-export const sourceAudit: AuditEntry[] = [
+const records: [string, string, string, string, string][] = [
   ['Today 06:12', 'Administrator', 'Sent invite', 'Chamari Wijesinghe', 'Driver · Kandy · VEH012'],
   ['Today 05:58', 'Administrator', 'Changed vehicle', 'Sanjeewa Bandara', 'VEH054 to VEH055'],
   [
@@ -21,12 +21,15 @@ export const sourceAudit: AuditEntry[] = [
     'Driver changed',
   ],
   ['Yesterday 14:10', 'Administrator', 'Sent invite', 'Nimal Perera', 'Store manager · OUT001'],
-].map(([referenceWhen, actor, action, recordName, detail], index) => ({
-  id: `FIGMA-AUD-${index + 1}`,
-  at: `2026-09-${index < 4 ? '25' : '24'}T${referenceWhen.slice(-5)}:00+05:30`,
-  referenceWhen,
-  actor,
-  action,
-  recordName,
-  detail,
-}))
+]
+export const sourceAudit: AuditEntry[] = records.map(
+  ([referenceWhen, actor, action, recordName, detail], index) => ({
+    id: `FIGMA-AUD-${index + 1}`,
+    at: `2026-09-${index < 4 ? '25' : '24'}T${referenceWhen.slice(-5)}:00+05:30`,
+    referenceWhen,
+    actor,
+    action,
+    recordName,
+    detail,
+  }),
+)

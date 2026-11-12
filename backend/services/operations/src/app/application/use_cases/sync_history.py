@@ -1,11 +1,16 @@
 """Actor-scoped recovery of committed device acknowledgements, with monotonic paging."""
 
+from sqlalchemy.orm import Session
+from waypoint_security import Actor
+
 from sqlalchemy import select
 from waypoint_contracts.plan import SyncHistoryEvent, SyncHistoryPage
 from app.infrastructure.messaging.models import DeviceCursor, DeviceOperation
 
 
-def read_history(db, user, device_id, after, limit):
+def read_history(
+    db: Session, user: Actor, device_id: str, after: int, limit: int
+) -> SyncHistoryPage:
     cursor = db.get(DeviceCursor, (user.id, device_id))
     high_watermark = cursor.sequence if cursor else 0
     sequence = DeviceOperation.payload["device_sequence"].as_integer()

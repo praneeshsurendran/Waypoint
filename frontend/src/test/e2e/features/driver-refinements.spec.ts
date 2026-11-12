@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import { expect, test } from '@playwright/test'
 import {
   clearedDriverLoad,
@@ -59,16 +60,16 @@ test('Driver navigation follows arrival and proof stages on a small mobile scree
     [834, 1112],
     [1440, 900],
   ]) {
-    await page.setViewportSize({ width, height })
+    await page.setViewportSize({ width: required(width), height: required(height) })
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
-      width,
+      required(width),
     )
     const input = await page.getByLabel('Store Manager name', { exact: true }).boundingBox()
     expect(input?.height).toBeGreaterThanOrEqual(44)
     const signature = await page
       .getByLabel('Store Manager signature', { exact: true })
       .boundingBox()
-    expect(signature?.width).toBeLessThan(width)
+    expect(signature?.width).toBeLessThan(required(width))
   }
 })
 
@@ -103,7 +104,7 @@ test('manager confirms quantities, remarks and signature in their workspace with
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
   const saved = await storedDriverState(page)
   expect(saved.statuses[0]).toBe('Delivered')
-  expect(saved.evidence[0].signatureSize).toBeGreaterThan(0)
+  expect(required(saved.evidence[0]).signatureSize).toBeGreaterThan(0)
   expect(saved.routeEvents.map((event) => event.kind)).toEqual([
     'started',
     'arrived',
@@ -172,7 +173,7 @@ test('Store Manager retains pending signed evidence and can log out while Driver
   await expect(logout).toBeVisible()
   await logout.getByRole('button', { name: 'Log Out', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
-  expect((await storedDriverState(page)).queue[0].status).toBe('pending')
+  expect(required((await storedDriverState(page)).queue[0]).status).toBe('pending')
 })
 
 test('manager contacts open on demand and remain usable without internet', async ({ page }) => {
@@ -198,7 +199,12 @@ test('offline route moves to the next outlet and proof navigation follows its ar
   await confirmProof(page, true)
   await page.goto('/driver/route')
   await expect(page.getByRole('heading', { name: 'OUT008 · Fresh Kelaniya' })).toBeVisible()
-  await page.getByRole('link', { name: 'Open turn-by-turn demo' }).click()
+  await page
+    .getByRole('list', { name: 'Ordered delivery outlets' })
+    .getByRole('link')
+    .filter({ hasText: /OUT/ })
+    .first()
+    .click()
   await page.getByRole('button', { name: 'Confirm I’ve parked' }).click()
   await expect(page).toHaveURL(/\/driver\/arrival\?stop=STOP008/)
   await page

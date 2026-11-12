@@ -43,7 +43,7 @@ export function RouteMapCard({
   outletId,
 }: {
   order: Order
-  stop?: Stop
+  stop?: Stop | undefined
   outletId: string
 }) {
   const session = useSession()

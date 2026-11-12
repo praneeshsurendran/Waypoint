@@ -1,6 +1,12 @@
 import { useBlobUrl } from '@/hooks/useBlobUrl'
 
-export function DriverPhotoPreview({ photo, fileName }: { photo?: Blob; fileName?: string }) {
+export function DriverPhotoPreview({
+  photo,
+  fileName,
+}: {
+  photo?: Blob | undefined
+  fileName?: string | undefined
+}) {
   const url = useBlobUrl(photo)
   return (
     <figure className="m-0">

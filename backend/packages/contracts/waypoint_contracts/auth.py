@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Optional
 
-from pydantic import BaseModel
+from typing import Optional
+from pydantic import Field
+from waypoint_contracts.runtime import Role
+
+from waypoint_contracts.common import ContractModel as BaseModel
 
 from waypoint_contracts.common import OrmModel
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=72)
 
 
 class TokenResponse(BaseModel):
@@ -24,7 +27,7 @@ class UserProfile(OrmModel):
     id: int
     username: str
     full_name: str
-    role: str
+    role: Role
     email: Optional[str] = None
     phone: Optional[str] = None
     is_active: bool

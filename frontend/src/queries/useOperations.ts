@@ -1,3 +1,4 @@
+import { identityKey, nextPoll } from '@/queries/polling'
 import { snapshotKey } from '@/queries/keys/queryKeys'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useBlobUrl } from '@/hooks/useBlobUrl'
@@ -115,11 +116,13 @@ export function useOperations() {
   const services = useServices()
   const apis = useApis()
   return useQuery({
-    queryKey: snapshotKey,
+    queryKey: [...snapshotKey, ...identityKey()],
     networkMode: 'always',
     queryFn: () =>
       getToken() ? getLiveSnapshot(apis, services) : services.repository.getSnapshot(),
     staleTime: 5000,
+    refetchInterval: (query) => nextPoll(query.state.fetchFailureCount, query.state.error),
+    refetchIntervalInBackground: false,
   })
 }
 export function useAction() {
@@ -153,13 +156,18 @@ export function useAction() {
 }
 export function useEvidence(id?: string) {
   const apis = useApis()
-  const isDirectUrl = Boolean(
-    id &&
-    (id.startsWith('blob:') ||
-      id.startsWith('http://') ||
-      id.startsWith('https://') ||
-      id.startsWith('/uploads')),
+  const protectedUpload = Boolean(
+    id && (id.startsWith('/uploads') || /^https?:\/\/[^/]+\/uploads\//.test(id)),
   )
+  const isDirectUrl =
+    !protectedUpload &&
+    Boolean(
+      id &&
+      (id.startsWith('blob:') ||
+        id.startsWith('http://') ||
+        id.startsWith('https://') ||
+        id.startsWith('/uploads')),
+    )
   const query = useQuery({
     queryKey: [...snapshotKey, 'api', 'evidence', id],
     networkMode: 'always',

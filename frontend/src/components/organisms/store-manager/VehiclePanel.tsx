@@ -24,9 +24,9 @@ export function VehiclePanel({
   onClose,
 }: {
   order: Order
-  stop?: Stop
-  vehicle?: Vehicle | null
-  driver?: string
+  stop?: Stop | undefined
+  vehicle?: Vehicle | null | undefined
+  driver?: string | undefined
   depot: string
   onClose: () => void
 }) {

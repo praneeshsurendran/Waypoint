@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Apis } from '@/types/api'
@@ -65,29 +66,29 @@ describe('Loader API readiness', () => {
     const assignedRoute = await apis.delivery.getRoute()
     expect(assignedRoute.stops.every((stop) => stop.loadId === 'LOAD055-1')).toBe(true)
     await repository.update((snapshot) => {
-      snapshot.loads[1].depot = 'Kandy'
+      required(snapshot.loads[1]).depot = 'Kandy'
     })
     expect((await apis.loading.listLoads({ depot: 'Kandy' })).map((load) => load.id)).toEqual([
-      loads[1].id,
+      required(loads[1]).id,
     ])
     expect(
       (await apis.loading.listLoads({ depot: 'Peliyagoda' })).some(
-        (load) => load.id === loads[1].id,
+        (load) => load.id === required(loads[1]).id,
       ),
     ).toBe(false)
     expect(await apis.loading.listLoads({ depot: 'Unknown' })).toEqual([])
   })
   it('rejects invalid counts and stale writes without changing the record', async () => {
     const load = await publishLoads()
-    for (const quantity of [-1, 0.5, load.items[0].expected + 1])
+    for (const quantity of [-1, 0.5, required(load.items[0]).expected + 1])
       await expect(
-        apis.loading.setLoaded(load.id, load.items[0].outlet, quantity, load.revision),
+        apis.loading.setLoaded(load.id, required(load.items[0]).outlet, quantity, load.revision),
       ).rejects.toThrow(/valid case/)
     await expect(
       apis.loading.setCheck(load.id, 'condition', true, load.revision - 1),
     ).rejects.toThrow(/changed/)
     await expect(
-      apis.loading.setLoaded(load.id, load.items[0].outlet, 1, load.revision - 1),
+      apis.loading.setLoaded(load.id, required(load.items[0]).outlet, 1, load.revision - 1),
     ).rejects.toThrow(/changed/)
     expect((await apis.loading.getLoad(load.id))?.checks.condition).toBe(false)
   })
@@ -101,7 +102,7 @@ describe('Loader API readiness', () => {
         load.id,
         {
           kind,
-          outlet: load.items[0].outlet,
+          outlet: required(load.items[0]).outlet,
           affectedCases: 1,
           description: 'One grocery case affected',
         },
@@ -150,7 +151,7 @@ describe('Loader API readiness', () => {
         load.id,
         {
           kind: 'Damaged',
-          outlet: load.items[0].outlet,
+          outlet: required(load.items[0]).outlet,
           affectedCases: 0,
           description: 'Milk case damaged',
         },
@@ -188,7 +189,7 @@ describe('Loader API readiness', () => {
     await apis.planning.release(load.id)
     await expect(apis.loading.complete(load.id, load.revision)).rejects.toThrow(/departed/)
     await expect(
-      apis.loading.setLoaded(load.id, load.items[0].outlet, 0, load.revision),
+      apis.loading.setLoaded(load.id, required(load.items[0]).outlet, 0, load.revision),
     ).rejects.toThrow(/departed/)
     await expect(apis.loading.setCheck(load.id, 'condition', false, load.revision)).rejects.toThrow(
       /departed/,

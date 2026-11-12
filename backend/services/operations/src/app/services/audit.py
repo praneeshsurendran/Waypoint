@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -50,7 +51,11 @@ def log_action(
     if action == "LOAD_FLAG" and (after or {}).get("status") in ("MISSING", "DAMAGED"):
         event_type = "load.shortfall_reported"
     if event_type:
-        data = {"actor_user_id": actor_user_id, "decision": after or {}, "revision": entry.id}
+        data: dict[str, object] = {
+            "actor_user_id": actor_user_id,
+            "decision": after or {},
+            "revision": entry.id,
+        }
         if entity_type == "Order":
             order = db.get(Order, int(entity_id))
             if order:
@@ -70,6 +75,8 @@ def log_action(
                 data.update(trip_payload(db, trip))
         if entity_type == "Plan":
             plan = db.get(Plan, int(entity_id))
+            if plan is None:
+                raise ValueError("Cannot publish a missing plan")
             data.update(
                 delivery_date=str(plan.delivery_date),
                 version=plan.version,

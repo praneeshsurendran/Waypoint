@@ -115,6 +115,8 @@ export default tseslint.config(
   {
     ignores: [
       'dist',
+      'src/api/generated/**',
+      'tools/contracts/node_modules/**',
       'node_modules',
       '.npm-cache',
       '.playwright',

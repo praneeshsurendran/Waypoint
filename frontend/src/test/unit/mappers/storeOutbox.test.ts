@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import { describe, expect, it } from 'vitest'
 import type { Order } from '@/types/models'
 import { applyOutbox } from '@/mappers/storeOutbox'
@@ -34,8 +35,8 @@ describe('applyOutbox', () => {
       [order({ status: 'Delivered' })],
       [item({ kind: 'receipt', orderId: 'ORD1' })],
     )
-    expect(result.receipt).toBe('Confirmed')
-    expect(result.pendingSync).toBe(true)
+    expect(required(result).receipt).toBe('Confirmed')
+    expect(required(result).pendingSync).toBe(true)
   })
 
   it('adds an order that does not exist yet and updates one that does', () => {
@@ -51,15 +52,16 @@ describe('applyOutbox', () => {
       [item({ kind: 'orders', inputs: [{ ...input, temperature: 'Ambient', cases: 9 }, input] })],
     )
     expect(result).toHaveLength(2)
-    expect(result[0].cases).toBe(9)
-    expect(result[1].id).toBe('PENDING-C')
+    expect(required(result[0]).cases).toBe(9)
+    expect(required(result[1]).id).toBe('PENDING-C')
     expect(result.every((entry) => entry.pendingSync)).toBe(true)
   })
 
   it('ignores changes that failed or were kept as drafts', () => {
     const orders = [order({ status: 'Delivered' })]
     expect(
-      applyOutbox(orders, [item({ kind: 'receipt', orderId: 'ORD1' }, 'failed')])[0].receipt,
+      required(applyOutbox(orders, [item({ kind: 'receipt', orderId: 'ORD1' }, 'failed')])[0])
+        .receipt,
     ).toBe('Pending')
   })
 })

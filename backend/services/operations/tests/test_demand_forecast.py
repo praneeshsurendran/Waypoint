@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
 
 SERVICE = Path(__file__).resolve().parents[1] / "src" / "app" / "services" / "demand_forecast.py"
-REAL_DATA = Path("/data")
+REAL_DATA = Path(
+    os.getenv(
+        "WAYPOINT_DATA_ROOT",
+        "/data" if Path("/data").exists() else str(Path(__file__).resolve().parents[4] / "data"),
+    )
+)
 
 
 def _load():

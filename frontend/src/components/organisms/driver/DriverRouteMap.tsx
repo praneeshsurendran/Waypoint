@@ -13,8 +13,8 @@ export function DriverRouteMap({
   offline,
 }: {
   stops: Stop[]
-  stop?: Stop
-  vehicle?: Vehicle
+  stop?: Stop | undefined
+  vehicle?: Vehicle | undefined
   offline: boolean
 }) {
   const [recenterKey, setRecenterKey] = useState(0)

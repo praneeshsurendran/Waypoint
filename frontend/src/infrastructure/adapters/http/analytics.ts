@@ -1,5 +1,5 @@
 import * as analyticsApi from '@/api/endpoints/analytics'
-import type { AnalyticsApi, WeekCapacity, DemandWeek } from '@/types/api/analytics'
+import type { AnalyticsApi, DemandWeek, WeekCapacity } from '@/types/api/analytics'
 
 export function createHttpAnalyticsApi(): AnalyticsApi {
   type ApiDemandWeek = {
@@ -10,7 +10,7 @@ export function createHttpAnalyticsApi(): AnalyticsApi {
     total_m3: number
     chilled_m3: number
     is_event_week: boolean
-    in_test_horizon?: boolean
+    in_test_horizon?: boolean | null
   }
   type ApiWeekCapacity = {
     depot: string
@@ -52,21 +52,11 @@ export function createHttpAnalyticsApi(): AnalyticsApi {
     totalM3: w.total_m3,
     chilledM3: w.chilled_m3,
     isEventWeek: w.is_event_week,
-    inTestHorizon: w.in_test_horizon,
+    inTestHorizon: w.in_test_horizon ?? undefined,
   })
   return {
     async demandForecast() {
-      const body = await analyticsApi.getAnalyticsDemandForecast<{
-        method: string
-        history: ApiDemandWeek[]
-        forecast: ApiDemandWeek[]
-        capacity: ApiWeekCapacity[]
-        backtest: {
-          weeks: string[]
-          wape_percent: number | null
-          by_depot: Record<string, number | null>
-        }
-      }>()
+      const body = await analyticsApi.getAnalyticsDemandForecast()
       return {
         method: body.method,
         history: body.history.map(mapWeek),

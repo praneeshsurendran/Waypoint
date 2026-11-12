@@ -4,7 +4,12 @@ import { useApis } from '@/app/providers/ApisContext'
 import { useOperations } from '@/queries/useOperations'
 import { useSession } from '@/hooks/useSession'
 
-type LocationState = { tracking: boolean; error?: string; start: () => void; stop: () => void }
+type LocationState = {
+  tracking: boolean
+  error?: string | undefined
+  start: () => void
+  stop: () => void
+}
 const LocationContext = createContext<LocationState | undefined>(undefined)
 
 function DriverRuntime({ children }: { children: ReactNode }) {

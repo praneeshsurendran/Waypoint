@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { request } from '@/api/client/apiClient'
 import { ApiError } from '@/api/client/apiErrors'
@@ -38,13 +39,13 @@ describe('central HTTP transport and endpoint contracts', () => {
       expect.objectContaining({
         credentials: 'include',
         signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer signed-in-token',
-          'X-Request': 'probe',
-        },
+        headers: expect.any(Headers),
       }),
     )
+    const headers = new Headers(required(fetchMock.mock.calls[0])[1]?.headers)
+    expect(headers.get('Authorization')).toBe('Bearer signed-in-token')
+    expect(headers.get('Content-Type')).toBe('application/json')
+    expect(headers.get('X-Request')).toBe('probe')
   })
 
   it('lets the browser set multipart boundaries and accepts empty responses', async () => {
@@ -52,7 +53,9 @@ describe('central HTTP transport and endpoint contracts', () => {
     const body = new FormData()
     body.append('file', new Blob(['photo'], { type: 'image/png' }), 'proof.png')
     await expect(request('/driver/uploads', { method: 'POST', body })).resolves.toBeUndefined()
-    expect(fetchMock.mock.calls[0][1]?.headers).not.toHaveProperty('Content-Type')
+    expect(new Headers(required(fetchMock.mock.calls[0])[1]?.headers).has('Content-Type')).toBe(
+      false,
+    )
   })
 
   it.each([
@@ -78,17 +81,38 @@ describe('central HTTP transport and endpoint contracts', () => {
   })
 
   it('keeps receipt, publication, and driver paths and payloads unchanged', async () => {
-    fetchMock.mockImplementation(async () => new Response(null, { status: 204 }))
-    const body = JSON.stringify({ outcome: 'FULL' })
+    fetchMock.mockImplementation(async (url) =>
+      Response.json(
+        String(url).endsWith('/receipt')
+          ? { ok: true, receipt_status: 'FULL' }
+          : String(url).endsWith('/publish')
+            ? {
+                plan_id: 7,
+                status: 'PUBLISHED',
+                published_at: '2026-11-12T00:00:00Z',
+                orders_planned: 1,
+                trips: 1,
+              }
+            : { ok: true },
+        { status: String(url).endsWith('/publish') ? 200 : 201 },
+      ),
+    )
+    const body = { outcome: 'FULL' }
     await confirmOrderReceipt('42', { method: 'POST', body })
     await publishPlan(7, { method: 'POST' })
-    await recordStopEvent('12', { method: 'POST', body: JSON.stringify({ outcome: 'DELIVERED' }) })
+    await recordStopEvent('12', {
+      method: 'POST',
+      body: { client_op_id: 'test-delivery', stop_id: 12, outcome: 'DELIVERED' },
+    })
     expect(fetchMock.mock.calls.map(([url]) => String(url).replace(/^.*\/api\/v1/, ''))).toEqual([
       '/orders/42/receipt',
       '/plans/7/publish',
       '/driver/stops/12/events',
     ])
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', body })
+    expect(required(fetchMock.mock.calls[0])[1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
   })
 
   it('preserves login payloads, session storage, and logout cleanup', async () => {
@@ -106,7 +130,7 @@ describe('central HTTP transport and endpoint contracts', () => {
       Response.json({ access_token: 'token', token_type: 'bearer', user }),
     )
     await login('driver', 'password')
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+    expect(required(fetchMock.mock.calls[0])[1]).toMatchObject({
       method: 'POST',
       body: JSON.stringify({ username: 'driver', password: 'password' }),
     })
@@ -127,7 +151,9 @@ it('authorizes private evidence only at the configured API origin', async () => 
   values.set('waypoint.token', 'private-token')
   fetchMock.mockResolvedValueOnce(new Response(new Blob(['proof'])))
   await fetchEvidenceBlob(`${new URL(BASE_URL).origin}/uploads/proof.jpg`)
-  expect(fetchMock.mock.calls[0][1]?.headers).toEqual({ Authorization: 'Bearer private-token' })
+  expect(required(fetchMock.mock.calls[0])[1]?.headers).toEqual({
+    Authorization: 'Bearer private-token',
+  })
 })
 
 it('never forwards the bearer token to an external evidence URL', async () => {
@@ -136,5 +162,5 @@ it('never forwards the bearer token to an external evidence URL', async () => {
   values.set('waypoint.token', 'private-token')
   fetchMock.mockResolvedValueOnce(new Response(new Blob(['proof'])))
   await fetchEvidenceBlob('https://private-objects.example/proof?signature=temporary')
-  expect(fetchMock.mock.calls[0][1]?.headers).toBeUndefined()
+  expect(required(fetchMock.mock.calls[0])[1]?.headers).toBeUndefined()
 })

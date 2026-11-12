@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -68,7 +69,7 @@ class Plan(Base):
     trips: Mapped[list["Trip"]] = relationship(
         "Trip", back_populates="plan_rel", cascade="all, delete-orphan"
     )
-    deferrals: Mapped[list["Deferral"]] = relationship("Deferral", back_populates="plan_rel")  # type: ignore[name-defined]
+    deferrals: Mapped[list["Deferral"]] = relationship("Deferral", back_populates="plan_rel")
 
 
 class Trip(Base):
@@ -106,11 +107,11 @@ class Trip(Base):
     )
 
     plan_rel: Mapped["Plan"] = relationship("Plan", back_populates="trips")
-    vehicle_rel: Mapped["Vehicle"] = relationship("Vehicle", back_populates="trips")  # type: ignore[name-defined]
+    vehicle_rel: Mapped["Vehicle"] = relationship("Vehicle", back_populates="trips")
     stops: Mapped[list["Stop"]] = relationship(
         "Stop", back_populates="trip_rel", cascade="all, delete-orphan"
     )
-    load_checks: Mapped[list["LoadCheck"]] = relationship("LoadCheck", back_populates="trip_rel")  # type: ignore[name-defined]
+    load_checks: Mapped[list["LoadCheck"]] = relationship("LoadCheck", back_populates="trip_rel")
 
     @property
     def photo_path(self) -> Optional[str]:
@@ -165,14 +166,14 @@ class Stop(Base):
     status: Mapped[str] = mapped_column(String(15), default="PENDING")
 
     trip_rel: Mapped["Trip"] = relationship("Trip", back_populates="stops")
-    outlet_rel: Mapped["Outlet"] = relationship("Outlet", back_populates="stops")  # type: ignore[name-defined]
+    outlet_rel: Mapped["Outlet"] = relationship("Outlet", back_populates="stops")
     stop_orders: Mapped[list["StopOrder"]] = relationship(
         "StopOrder", back_populates="stop_rel", cascade="all, delete-orphan"
     )
     delivery_events: Mapped[list["DeliveryEvent"]] = relationship(
         "DeliveryEvent", back_populates="stop_rel"
-    )  # type: ignore[name-defined]
-    issues: Mapped[list["Issue"]] = relationship("Issue", back_populates="stop_rel")  # type: ignore[name-defined]
+    )
+    issues: Mapped[list["Issue"]] = relationship("Issue", back_populates="stop_rel")
 
     @property
     def district(self) -> Optional[str]:
@@ -204,7 +205,11 @@ class Stop(Base):
 
     @property
     def total_cases(self) -> int:
-        return sum(so.order_rel.total_cases for so in (self.stop_orders or []) if so.order_rel)
+        total = 0
+        for link in self.stop_orders or []:
+            if link.order_rel is not None:
+                total += link.order_rel.total_cases
+        return total
 
     @property
     def proof_id(self) -> Optional[str]:
@@ -230,4 +235,4 @@ class StopOrder(Base):
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"))
 
     stop_rel: Mapped["Stop"] = relationship("Stop", back_populates="stop_orders")
-    order_rel: Mapped["Order"] = relationship("Order", back_populates="stop_orders")  # type: ignore[name-defined]
+    order_rel: Mapped["Order"] = relationship("Order", back_populates="stop_orders")

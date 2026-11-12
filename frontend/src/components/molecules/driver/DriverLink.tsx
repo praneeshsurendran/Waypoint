@@ -9,7 +9,7 @@ export function DriverLink({
 }: {
   to: string
   children: React.ReactNode
-  variant?: ComponentProps<typeof Button>['variant']
+  variant?: ComponentProps<typeof Button>['variant'] | undefined
 }) {
   return (
     <Button asChild variant={variant}>

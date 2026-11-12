@@ -1,0 +1,1607 @@
+[
+  {
+    "owner": "identity",
+    "path": "/auth/login",
+    "method": "post",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": [],
+    "request": "v1",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/auth/me",
+    "method": "get",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "identity",
+    "path": "/auth/me",
+    "method": "patch",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [],
+    "request": "v3",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/admin/users",
+    "method": "get",
+    "responses": {
+      "200": "v4"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "identity",
+    "path": "/admin/users",
+    "method": "post",
+    "responses": {
+      "201": "v5"
+    },
+    "parameters": [],
+    "request": "v6",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/admin/users/{user_id}",
+    "method": "patch",
+    "responses": {
+      "200": "v5"
+    },
+    "parameters": [
+      {
+        "name": "user_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "User Id"
+        }
+      }
+    ],
+    "request": "v7",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/admin/users/{user_id}/reassign-trip",
+    "method": "post",
+    "responses": {
+      "204": null
+    },
+    "parameters": [
+      {
+        "name": "user_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "User Id"
+        }
+      }
+    ],
+    "request": "v8",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/admin/users/{user_id}/reset-password",
+    "method": "post",
+    "responses": {
+      "204": null
+    },
+    "parameters": [
+      {
+        "name": "user_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "User Id"
+        }
+      }
+    ],
+    "request": "v9",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
+    "path": "/reference/store-managers",
+    "method": "get",
+    "responses": {
+      "200": "v10"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "identity",
+    "path": "/health/live",
+    "method": "get",
+    "responses": {
+      "200": "v11"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "identity",
+    "path": "/health/ready",
+    "method": "get",
+    "responses": {
+      "200": "v12"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "network",
+    "path": "/reference/depots",
+    "method": "get",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "network",
+    "path": "/reference/outlets",
+    "method": "get",
+    "responses": {
+      "200": "v1"
+    },
+    "parameters": [
+      {
+        "name": "depot",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Depot"
+        }
+      },
+      {
+        "name": "brand",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Brand"
+        }
+      },
+      {
+        "name": "district",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "District"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "network",
+    "path": "/reference/outlets/{outlet_id}",
+    "method": "get",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [
+      {
+        "name": "outlet_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Outlet Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "network",
+    "path": "/reference/vehicles",
+    "method": "get",
+    "responses": {
+      "200": "v3"
+    },
+    "parameters": [
+      {
+        "name": "depot",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Depot"
+        }
+      },
+      {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Type"
+        }
+      },
+      {
+        "name": "refrigerated",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Refrigerated"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "network",
+    "path": "/reference/vehicles/{vehicle_id}",
+    "method": "get",
+    "responses": {
+      "200": "v4"
+    },
+    "parameters": [
+      {
+        "name": "vehicle_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Vehicle Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "network",
+    "path": "/reference/calendar",
+    "method": "get",
+    "responses": {
+      "200": "v5"
+    },
+    "parameters": [
+      {
+        "name": "from",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "From"
+        }
+      },
+      {
+        "name": "to",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "To"
+        }
+      },
+      {
+        "name": "operating_only",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "boolean",
+          "default": false,
+          "title": "Operating Only"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "network",
+    "path": "/reference/vehicles/{vehicle_id}/availability",
+    "method": "patch",
+    "responses": {
+      "200": "v4"
+    },
+    "parameters": [
+      {
+        "name": "vehicle_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Vehicle Id"
+        }
+      }
+    ],
+    "request": "v6",
+    "bodyRequired": true
+  },
+  {
+    "owner": "network",
+    "path": "/admin/outlets",
+    "method": "post",
+    "responses": {
+      "201": "v2"
+    },
+    "parameters": [],
+    "request": "v7",
+    "bodyRequired": true
+  },
+  {
+    "owner": "network",
+    "path": "/admin/vehicles",
+    "method": "post",
+    "responses": {
+      "201": "v4"
+    },
+    "parameters": [],
+    "request": "v8",
+    "bodyRequired": true
+  },
+  {
+    "owner": "network",
+    "path": "/health/live",
+    "method": "get",
+    "responses": {
+      "200": "v9"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "network",
+    "path": "/health/ready",
+    "method": "get",
+    "responses": {
+      "200": "v10"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/health/live",
+    "method": "get",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/health",
+    "method": "get",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/health/ready",
+    "method": "get",
+    "responses": {
+      "200": "v1"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/health/db",
+    "method": "get",
+    "responses": {
+      "200": "v1"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/orders",
+    "method": "post",
+    "responses": {
+      "201": "v2"
+    },
+    "parameters": [],
+    "request": "v3",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/orders",
+    "method": "get",
+    "responses": {
+      "200": "v4"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Status"
+        }
+      },
+      {
+        "name": "outlet_id",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Outlet Id"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 1000,
+          "minimum": 1,
+          "default": 500,
+          "title": "Limit"
+        }
+      },
+      {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "title": "Offset"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/stops",
+    "method": "get",
+    "responses": {
+      "200": "v5"
+    },
+    "parameters": [
+      {
+        "name": "outlet_id",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Outlet Id"
+        }
+      },
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/intake-status",
+    "method": "get",
+    "responses": {
+      "200": "v6"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/close",
+    "method": "post",
+    "responses": {
+      "200": "v7"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}",
+    "method": "get",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}",
+    "method": "patch",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ],
+    "request": "v8",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}/cancel",
+    "method": "post",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}/confirm",
+    "method": "post",
+    "responses": {
+      "200": "v9"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}/receipt",
+    "method": "post",
+    "responses": {
+      "201": "v10"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ],
+    "request": "v11",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/orders/{order_id}/issues",
+    "method": "post",
+    "responses": {
+      "201": "v12"
+    },
+    "parameters": [
+      {
+        "name": "order_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Order Id"
+        }
+      }
+    ],
+    "request": "v13",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/plans",
+    "method": "get",
+    "responses": {
+      "200": "v14"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      },
+      {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Status"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/plans/{plan_id}",
+    "method": "get",
+    "responses": {
+      "200": "v15"
+    },
+    "parameters": [
+      {
+        "name": "plan_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Plan Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/plans/{plan_id}",
+    "method": "patch",
+    "responses": {
+      "200": "v15"
+    },
+    "parameters": [
+      {
+        "name": "plan_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Plan Id"
+        }
+      }
+    ],
+    "request": "v16",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/plans/auto-plan",
+    "method": "post",
+    "responses": {
+      "201": "v15"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/plans/{plan_id}/validate",
+    "method": "post",
+    "responses": {
+      "200": "v17"
+    },
+    "parameters": [
+      {
+        "name": "plan_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Plan Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/plans/{plan_id}/publish",
+    "method": "post",
+    "responses": {
+      "200": "v18"
+    },
+    "parameters": [
+      {
+        "name": "plan_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Plan Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/deferrals",
+    "method": "post",
+    "responses": {
+      "201": "v19"
+    },
+    "parameters": [],
+    "request": "v20",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/deferrals",
+    "method": "get",
+    "responses": {
+      "200": "v21"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/deferrals/outlets/{outlet_id}/history",
+    "method": "get",
+    "responses": {
+      "200": "v22"
+    },
+    "parameters": [
+      {
+        "name": "outlet_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Outlet Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/loading/trips",
+    "method": "get",
+    "responses": {
+      "200": "v23"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      },
+      {
+        "name": "depot",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Depot"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/loading/trips/{trip_id}",
+    "method": "get",
+    "responses": {
+      "200": "v24"
+    },
+    "parameters": [
+      {
+        "name": "trip_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Trip Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/loading/trips/{trip_id}/flags",
+    "method": "post",
+    "responses": {
+      "201": "v12"
+    },
+    "parameters": [
+      {
+        "name": "trip_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Trip Id"
+        }
+      }
+    ],
+    "request": "v25",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/loading/trips/{trip_id}/start",
+    "method": "post",
+    "responses": {
+      "200": "v9"
+    },
+    "parameters": [
+      {
+        "name": "trip_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Trip Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/loading/trips/{trip_id}/release",
+    "method": "post",
+    "responses": {
+      "200": "v9"
+    },
+    "parameters": [
+      {
+        "name": "trip_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Trip Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/trips/current",
+    "method": "get",
+    "responses": {
+      "200": "v26"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/trips/start",
+    "method": "post",
+    "responses": {
+      "200": "v9"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/stops/{stop_id}/events",
+    "method": "post",
+    "responses": {
+      "201": "v27"
+    },
+    "parameters": [
+      {
+        "name": "stop_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "title": "Stop Id"
+        }
+      }
+    ],
+    "request": "v28",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/sync",
+    "method": "post",
+    "responses": {
+      "200": "v29"
+    },
+    "parameters": [],
+    "request": "v30",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/sync",
+    "method": "get",
+    "responses": {
+      "200": "v31"
+    },
+    "parameters": [
+      {
+        "name": "device_id",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "title": "Device Id"
+        }
+      },
+      {
+        "name": "after",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "title": "After"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 200,
+          "minimum": 1,
+          "default": 100,
+          "title": "Limit"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/uploads",
+    "method": "post",
+    "responses": {
+      "200": "v32"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/positions",
+    "method": "post",
+    "responses": {
+      "201": "v12"
+    },
+    "parameters": [],
+    "request": "v33",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/positions/latest",
+    "method": "get",
+    "responses": {
+      "200": "v34"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/check-delivery-windows",
+    "method": "post",
+    "responses": {
+      "200": "v35"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/driver/history",
+    "method": "get",
+    "responses": {
+      "200": "v36"
+    },
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 500,
+          "minimum": 1,
+          "default": 200,
+          "title": "Limit"
+        }
+      },
+      {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "title": "Offset"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/clock",
+    "method": "get",
+    "responses": {
+      "200": "v37"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/clock",
+    "method": "post",
+    "responses": {
+      "200": "v37"
+    },
+    "parameters": [],
+    "request": "v38",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/events/poll",
+    "method": "get",
+    "responses": {
+      "200": "v39"
+    },
+    "parameters": [
+      {
+        "name": "since",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Since"
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 200,
+          "minimum": 1,
+          "default": 50,
+          "title": "Limit"
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cursor"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/capacity/forecast",
+    "method": "get",
+    "responses": {
+      "200": "v40"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/analytics/daily",
+    "method": "get",
+    "responses": {
+      "200": "v41"
+    },
+    "parameters": [
+      {
+        "name": "date",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/analytics/fuel",
+    "method": "get",
+    "responses": {
+      "200": "v42"
+    },
+    "parameters": [
+      {
+        "name": "iso_year",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Iso Year"
+        }
+      },
+      {
+        "name": "iso_week",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Iso Week"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/admin/audit",
+    "method": "get",
+    "responses": {
+      "200": "v43"
+    },
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 1000,
+          "minimum": 1,
+          "default": 200,
+          "title": "Limit"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/analytics/demand-forecast",
+    "method": "get",
+    "responses": {
+      "200": "v44"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "operations",
+    "path": "/planning/jobs",
+    "method": "post",
+    "responses": {
+      "202": "v45"
+    },
+    "parameters": [],
+    "request": "v46",
+    "bodyRequired": true
+  },
+  {
+    "owner": "operations",
+    "path": "/planning/jobs/{job_id}",
+    "method": "get",
+    "responses": {
+      "200": "v47"
+    },
+    "parameters": [
+      {
+        "name": "job_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Job Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/planning/jobs/{job_id}/cancel",
+    "method": "post",
+    "responses": {
+      "200": "v45"
+    },
+    "parameters": [
+      {
+        "name": "job_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Job Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/uploads/{key}",
+    "method": "get",
+    "responses": {
+      "200": null
+    },
+    "parameters": [
+      {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Key"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/evidence/{key}/download-url",
+    "method": "get",
+    "responses": {
+      "200": "v48"
+    },
+    "parameters": [
+      {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Key"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "notifications",
+    "path": "/notifications",
+    "method": "get",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "maximum": 200,
+          "minimum": 1,
+          "default": 50,
+          "title": "Limit"
+        }
+      },
+      {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "title": "Offset"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "notifications",
+    "path": "/notifications/{event_id}/read",
+    "method": "post",
+    "responses": {
+      "200": "v1"
+    },
+    "parameters": [
+      {
+        "name": "event_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Event Id"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "notifications",
+    "path": "/notifications/push-subscriptions",
+    "method": "post",
+    "responses": {},
+    "parameters": []
+  },
+  {
+    "owner": "notifications",
+    "path": "/health/live",
+    "method": "get",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "notifications",
+    "path": "/health/ready",
+    "method": "get",
+    "responses": {
+      "200": "v3"
+    },
+    "parameters": []
+  }
+]

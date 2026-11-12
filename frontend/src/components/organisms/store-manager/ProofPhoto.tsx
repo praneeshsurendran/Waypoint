@@ -8,7 +8,7 @@ import { ManagerSignOffDetails } from '@/components/organisms/ManagerSignOffDeta
 import fallback from '@/components/organisms/store-manager/assets/delivery-photo.png'
 
 /** The delivery photograph, or the design's placeholder illustration before a photo is synced. */
-export function ProofImage({ url, alt }: { url?: string; alt: string }) {
+export function ProofImage({ url, alt }: { url?: string | undefined; alt: string }) {
   return (
     <div className="sm-photo-frame">
       <img src={url ?? fallback} alt={alt} />
@@ -29,9 +29,9 @@ export function ProofDialog({
   onClose: () => void
   orderId: string
   outletId: string
-  url?: string
-  capturedAt?: string
-  evidence?: Evidence
+  url?: string | undefined
+  capturedAt?: string | undefined
+  evidence?: Evidence | undefined
 }) {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>

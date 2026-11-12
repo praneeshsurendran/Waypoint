@@ -1,5 +1,13 @@
 """Atomic offline replay with ownership, payload identity, ordering and reconciliation."""
 
+from typing import NoReturn
+from pydantic import JsonValue
+from sqlalchemy.orm import Session
+from waypoint_security import Actor
+from waypoint_contracts.plan import DeliveryEventIn
+from waypoint_contracts.runtime import DeviceResult
+from app.infrastructure.db.models.plan import Stop
+
 import hashlib
 import json
 from urllib.parse import urlparse
@@ -16,11 +24,13 @@ from app.services.audit import log_action
 from app.services.state_machine import transition_order, transition_trip, transition_stop
 
 
-def fail(code, message, status=409):
+def fail(code: str, message: str, status: int = 409) -> NoReturn:
     raise HTTPException(status, detail={"code": code, "message": message})
 
 
-def authorize_trip(db, trip, user):
+def authorize_trip(db: Session, trip: Trip | None, user: Actor) -> None:
+    if trip is None:
+        fail("NOT_FOUND", "Trip not found.", 404)
     if user.role == "DRIVER" and (not user.vehicle_id or trip.vehicle_id != user.vehicle_id):
         fail("FORBIDDEN", "This trip is not assigned to you.", 403)
     vehicle = db.get(Vehicle, trip.vehicle_id)
@@ -36,13 +46,15 @@ def authorize_trip(db, trip, user):
         fail("FORBIDDEN", "This trip belongs to another depot.", 403)
 
 
-def apply_event(db, stop, body, user):
+def apply_event(db: Session, stop: Stop, body: DeliveryEventIn, user: Actor) -> DeviceResult:
     if body.stop_id != stop.id:
         fail("STOP_MISMATCH", "Path and event stop IDs must agree.", 422)
     trip = db.get(Trip, stop.trip_id, with_for_update=True)
     authorize_trip(db, trip, user)
+    if trip is None:
+        fail("NOT_FOUND", "Trip not found.", 404)
     # Serialize the key as well as the trip, including concurrent duplicate posts to different stops.
-    if db.bind.dialect.name == "postgresql":
+    if db.get_bind().dialect.name == "postgresql":
         db.execute(
             text("SELECT pg_advisory_xact_lock(hashtextextended(:key,0))"),
             {"key": "device-op:" + body.client_op_id},
@@ -78,7 +90,7 @@ def apply_event(db, stop, body, user):
     if body.device_id is not None:
         if body.device_sequence is None:
             fail("DEVICE_SEQUENCE_REQUIRED", "A device sequence is required.", 422)
-        if db.bind.dialect.name == "postgresql":
+        if db.get_bind().dialect.name == "postgresql":
             db.execute(
                 text("SELECT pg_advisory_xact_lock(hashtextextended(:key,0))"),
                 {"key": f"device:{user.id}:{body.device_id}"},
@@ -117,6 +129,8 @@ def apply_event(db, stop, body, user):
         transition_stop(stop, "PENDING")
         for oid in linked:
             order = db.get(Order, oid)
+            if order is None:
+                fail("ORDER_NOT_FOUND", "Linked order not found.", 409)
             if order.status == "FAILED":
                 order.status = "IN_TRANSIT"
         if trip.status == "COMPLETED":
@@ -135,6 +149,8 @@ def apply_event(db, stop, body, user):
         for trip_stop in trip.stops:
             for link in trip_stop.stop_orders:
                 order = db.get(Order, link.order_id)
+                if order is None:
+                    fail("ORDER_NOT_FOUND", "Linked order not found.", 409)
                 if order.status == "LOADED":
                     transition_order(order, "IN_TRANSIT")
         log_action(db, "START_TRIP", "Trip", trip.id, user.id, after={"status": "IN_TRANSIT"})
@@ -162,13 +178,18 @@ def apply_event(db, stop, body, user):
         ids = {body.order_id} if body.order_id is not None else linked
         for oid in ids:
             order = db.get(Order, oid)
+            if order is None:
+                fail("ORDER_NOT_FOUND", "Linked order not found.", 409)
             target_order = {"DELIVERED": "DELIVERED", "PARTIAL": "PARTIAL"}.get(
                 body.outcome, "FAILED"
             )
             if order.status != target_order:
                 transition_order(order, target_order)
         # An order-specific event must not hide the other orders at the same outlet.
-        remaining = [db.get(Order, oid).status for oid in linked]
+        linked_orders = db.query(Order).filter(Order.id.in_(linked)).all()
+        if len(linked_orders) != len(linked):
+            fail("ORDER_NOT_FOUND", "Linked order not found.", 409)
+        remaining = [order.status for order in linked_orders]
         if all(status in ("DELIVERED", "PARTIAL", "FAILED") for status in remaining):
             if any(status == "FAILED" for status in remaining):
                 target = "FAILED"
@@ -233,7 +254,7 @@ def apply_event(db, stop, body, user):
     return {"ok": True}
 
 
-def trip_payload(db, trip):
+def trip_payload(db: Session, trip: Trip) -> dict[str, JsonValue]:
     trip.revision = (trip.revision or 0) + 1
     vehicle = db.get(Vehicle, trip.vehicle_id)
     return {

@@ -1,12 +1,17 @@
 """Scoped, durable driver timeline from the operations audit ledger."""
 
+from sqlalchemy.orm import Session
+from waypoint_security import Actor
+from waypoint_contracts.runtime import DriverHistoryEvent
+from pydantic import TypeAdapter
+
 from sqlalchemy import String, and_, cast, or_, select
 from app.infrastructure.db.models.audit import AuditLog
 from app.infrastructure.db.models.plan import Plan, Stop, Trip
 from app.infrastructure.db.models.reference import Vehicle
 
 
-def read_history(db, user, limit, offset):
+def read_history(db: Session, user: Actor, limit: int, offset: int) -> list[DriverHistoryEvent]:
     query = (
         select(AuditLog, Trip, Stop, Plan.delivery_date)
         .select_from(AuditLog)
@@ -77,4 +82,4 @@ def read_history(db, user, limit, offset):
                 "outletId": stop.outlet_id if stop else None,
             }
         )
-    return events
+    return TypeAdapter(list[DriverHistoryEvent]).validate_python(events)

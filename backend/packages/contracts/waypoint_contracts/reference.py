@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import datetime as dt
-from typing import Optional
 
-from waypoint_contracts.common import OrmModel
+import datetime as dt
+from typing import Optional, Literal
+
+from waypoint_contracts.common import OrmModel, ContractModel
 
 
 class DepotOut(OrmModel):
@@ -61,3 +62,7 @@ class CalendarDayOut(OrmModel):
     is_holiday: bool
     monsoon: bool
     is_operating: bool
+
+
+class VehicleAvailability(ContractModel):
+    status: Literal["available", "in_workshop", "unavailable"]

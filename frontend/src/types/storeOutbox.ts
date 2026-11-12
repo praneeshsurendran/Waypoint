@@ -19,10 +19,10 @@ export interface OutboxItem {
   title: string
   createdAt: string
   status: OutboxStatus
-  message?: string
+  message?: string | undefined
 }
 
 /** An order as the store screens see it: possibly changed by something not sent yet. */
-export type StoreOrder = Order & { pendingSync?: boolean }
+export type StoreOrder = Order & { pendingSync?: boolean | undefined }
 
 export type Delivery = { status: 'sent' } | { status: 'draft'; message: string }

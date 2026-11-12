@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
+from waypoint_contracts.common import ContractModel as BaseModel
 
 EVENT_TYPES = frozenset(
     {
@@ -58,10 +59,18 @@ class EventEnvelope(BaseModel):
         return value.astimezone(timezone.utc)
 
     @model_validator(mode="after")
-    def typed_payload(self):
+    def typed_payload(self) -> "EventEnvelope":
         from .event_data import PAYLOADS
 
-        PAYLOADS[self.event_type].model_validate(self.data)
+        payload = PAYLOADS[self.event_type].model_validate(self.data)
+        if self.event_type in ("identity.user_changed", "network.reference_changed"):
+            from .event_data import ReferenceChange
+
+            if isinstance(payload, ReferenceChange):
+                if (payload.entity == "users") != (
+                    self.event_type == "identity.user_changed"
+                ):
+                    raise ValueError("event type does not own the reference entity")
         return self
 
     def fingerprint(self) -> str:

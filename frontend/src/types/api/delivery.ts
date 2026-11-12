@@ -13,10 +13,10 @@ export interface DeliveryProof {
   quantity: number
   receiver: string
   exception: string
-  signature?: Blob
-  managerSignOff?: ManagerSignOff
+  signature?: Blob | undefined
+  managerSignOff?: ManagerSignOff | undefined
   /** Capture revision is retained when submission follows a route change. */
-  capturedRevision?: number
+  capturedRevision?: number | undefined
 }
 
 /**
@@ -25,7 +25,7 @@ export interface DeliveryProof {
  */
 export interface DeliveryApi {
   getRoute(): Promise<RouteState>
-  listStops(filter?: { outletId?: string }): Promise<Stop[]>
+  listStops(filter?: { outletId?: string | undefined }): Promise<Stop[]>
   startRoute(): Promise<void>
   arrive(stopId: string): Promise<void>
   saveProof(stopId: string, proof: DeliveryProof): Promise<void>
@@ -48,6 +48,6 @@ export interface DeliveryApi {
   deleteProofDraft(stopId: string): Promise<void>
   /** Records saved on this device that still need, or are under, sync review. */
   listQueue(): Promise<QueuedAction[]>
-  sync(isOnline: boolean, options?: { retryFailed?: boolean }): Promise<void>
+  sync(isOnline: boolean, options?: { retryFailed?: boolean | undefined }): Promise<void>
   reviewQueuedRecord(actionId: string): Promise<void>
 }

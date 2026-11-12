@@ -2,12 +2,25 @@
 
 from __future__ import annotations
 
-import datetime as dt
-from typing import Optional
 
-from pydantic import BaseModel
+import datetime as dt
+from typing import Annotated, Optional
+
+from waypoint_contracts.common import ContractModel as BaseModel
 
 from waypoint_contracts.common import OrmModel
+from pydantic import AfterValidator, Field
+
+
+def validate_password(value: str) -> str:
+    if not 8 <= len(value.encode("utf-8")) <= 72:
+        raise ValueError("password must contain between 8 and 72 UTF-8 bytes")
+    return value
+
+
+Password = Annotated[
+    str, Field(min_length=8, max_length=72), AfterValidator(validate_password)
+]
 
 
 class AdminUserOut(OrmModel):
@@ -29,7 +42,7 @@ class AdminUserOut(OrmModel):
 
 class AdminUserCreate(BaseModel):
     username: str
-    password: str
+    password: Password
     full_name: str
     email: str
     phone: Optional[str] = None
@@ -55,7 +68,7 @@ class AdminUserUpdate(BaseModel):
 
 
 class PasswordReset(BaseModel):
-    password: str
+    password: Password
 
 
 class TripReassign(BaseModel):

@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import { describe, expect, it } from 'vitest'
 import { ROLE_ALLOWED_WORKSPACES, ROLE_HOME_MAP } from '@/app/router/guards/RoleRouteGuard'
 
@@ -11,7 +12,7 @@ describe('RoleRouteGuard configuration', () => {
   })
 
   it('restricts LOADER exclusively to loader workspace', () => {
-    const allowed = ROLE_ALLOWED_WORKSPACES.LOADER
+    const allowed = required(ROLE_ALLOWED_WORKSPACES.LOADER)
     expect(allowed).toEqual(['loader'])
     expect(allowed.includes('dispatcher')).toBe(false)
     expect(allowed.includes('driver')).toBe(false)
@@ -20,27 +21,27 @@ describe('RoleRouteGuard configuration', () => {
   })
 
   it('restricts DISPATCHER to dispatcher workspace', () => {
-    const allowed = ROLE_ALLOWED_WORKSPACES.DISPATCHER
+    const allowed = required(ROLE_ALLOWED_WORKSPACES.DISPATCHER)
     expect(allowed).toEqual(['dispatcher'])
     expect(allowed.includes('loader')).toBe(false)
     expect(allowed.includes('driver')).toBe(false)
   })
 
   it('restricts DRIVER to driver workspace', () => {
-    const allowed = ROLE_ALLOWED_WORKSPACES.DRIVER
+    const allowed = required(ROLE_ALLOWED_WORKSPACES.DRIVER)
     expect(allowed).toEqual(['driver'])
     expect(allowed.includes('dispatcher')).toBe(false)
     expect(allowed.includes('loader')).toBe(false)
   })
 
   it('restricts STORE_MANAGER to store-manager workspace', () => {
-    const allowed = ROLE_ALLOWED_WORKSPACES.STORE_MANAGER
+    const allowed = required(ROLE_ALLOWED_WORKSPACES.STORE_MANAGER)
     expect(allowed).toEqual(['store-manager'])
     expect(allowed.includes('dispatcher')).toBe(false)
   })
 
   it('allows ADMIN to access administration and dispatcher workspaces', () => {
-    const allowed = ROLE_ALLOWED_WORKSPACES.ADMIN
+    const allowed = required(ROLE_ALLOWED_WORKSPACES.ADMIN)
     expect(allowed).toContain('administration')
     expect(allowed).toContain('dispatcher')
     expect(allowed.includes('loader')).toBe(false)

@@ -16,11 +16,11 @@ export interface StoreOrderInput {
   volume: number
   window: string
   /** End of the receiving window, e.g. "07:30". Defaults to two hours after `window`. */
-  windowEnd?: string
+  windowEnd?: string | undefined
   /** Tech only: change this existing order instead of adding another (Tech orders as needed). */
-  orderId?: string
+  orderId?: string | undefined
   /** Tech only: `weight` was stated by the store, not worked out from the item count. */
-  weightEntered?: boolean
+  weightEntered?: boolean | undefined
 }
 
 export type OrderStatus =
@@ -29,7 +29,7 @@ export type OrderStatus =
 export interface Order {
   id: string
   /** The order number people read out and see on paperwork (e.g. ORD-20240410-0001), when the source has one. */
-  reference?: string
+  reference?: string | undefined
   outlet: string
   outletName: string
   brand: 'Fresh' | 'Style' | 'Tech'
@@ -39,40 +39,42 @@ export interface Order {
   temperature: Temperature
   cases: number
   status: OrderStatus
-  vehicleId?: string
-  trip?: number
-  deferralReason?: string
+  vehicleId?: string | undefined
+  trip?: number | undefined
+  deferralReason?: string | undefined
   priority: boolean
   /** The delivery day this order was for, "2026-09-24". Absent on the live orders (next run). */
-  deliveryDate?: string
+  deliveryDate?: string | undefined
   /** Event times (ISO), set as the order moves through the workflow. */
-  placedAt?: string
-  scheduledAt?: string
-  departedAt?: string
-  deliveredAt?: string
-  deferredAt?: string
-  deferralAcknowledgedAt?: string
-  receiptAt?: string
+  placedAt?: string | undefined
+  scheduledAt?: string | undefined
+  departedAt?: string | undefined
+  deliveredAt?: string | undefined
+  deferredAt?: string | undefined
+  deferralAcknowledgedAt?: string | undefined
+  receiptAt?: string | undefined
   /** Set when the store withdrew the order before the cutoff; such orders are kept in the history. */
-  cancelledAt?: string
-  windowEnd?: string
+  cancelledAt?: string | undefined
+  windowEnd?: string | undefined
   receipt: 'Pending' | 'Confirmed' | 'Issue reported'
-  issue?: string
-  deferralAcknowledged?: boolean
-  receiptReport?: {
-    kind: 'Missing' | 'Damaged'
-    received: number
-    affected: number
-    description: string
-    recordedAt: string
-  }
+  issue?: string | undefined
+  deferralAcknowledged?: boolean | undefined
+  receiptReport?:
+    | {
+        kind: 'Missing' | 'Damaged'
+        received: number
+        affected: number
+        description: string
+        recordedAt: string
+      }
+    | undefined
 }
 
 export interface Vehicle {
   id: string
   brand: Order['brand']
   /** False when the source does not tie vehicles to a brand (the backend), so any brand may use it. */
-  brandRestricted?: boolean
+  brandRestricted?: boolean | undefined
   type: 'Van' | 'Truck'
   reefer: boolean
   weightCapacity: number
@@ -80,16 +82,16 @@ export interface Vehicle {
   /** Ready: loaded and released, waiting for the driver to start. */
   status: 'Available' | 'Loading' | 'Ready' | 'En route' | 'Offline'
   /** The depot the vehicle works from. Absent in the sample fleet; see `vehicleDepot`. */
-  depot?: string
+  depot?: string | undefined
   /** Number plate. */
-  registration?: string
+  registration?: string | undefined
   location: string
   lat: number
   lng: number
   updatedMinutes: number
-  positionSource?: 'device' | 'demo'
-  positionUpdatedAt?: string
-  positionAccuracy?: number
+  positionSource?: 'device' | 'demo' | undefined
+  positionUpdatedAt?: string | undefined
+  positionAccuracy?: number | undefined
 }
 
 export interface Load {
@@ -98,11 +100,11 @@ export interface Load {
   trip: number
   revision: number
   bay: string
-  depot?: string
-  departureTime?: string
-  acknowledgedRevision?: number
-  revisionChanges?: string[]
-  issueDetails?: LoadIssueInput
+  depot?: string | undefined
+  departureTime?: string | undefined
+  acknowledgedRevision?: number | undefined
+  revisionChanges?: string[] | undefined
+  issueDetails?: LoadIssueInput | undefined
   items: {
     outlet: string
     name: string
@@ -110,16 +112,16 @@ export interface Load {
     loaded: number
     stop: number
     /** From the outlet's reference data, when the backend supplies it. */
-    district?: string
-    lat?: number
-    lng?: number
-    window?: string
-    eta?: string
+    district?: string | undefined
+    lat?: number | undefined
+    lng?: number | undefined
+    window?: string | undefined
+    eta?: string | undefined
   }[]
   checks: { refrigeration: boolean; condition: boolean; restraints: boolean }
-  issue?: string
+  issue?: string | undefined
   issueResolved: boolean
-  photoId?: string
+  photoId?: string | undefined
   completed: boolean
   released: boolean
 }
@@ -144,36 +146,37 @@ export interface Trip {
 
 export interface Stop {
   id: string
-  loadId?: string
+  loadId?: string | undefined
   outlet: string
   name: string
   address: string
   window: string
   eta: string
-  originalEta?: string
-  etaUpdatedAt?: string
+  originalEta?: string | undefined
+  etaUpdatedAt?: string | undefined
   lat: number
   lng: number
   orderIds: string[]
   cases: number
   status: 'Upcoming' | 'Arrived' | 'Proof pending' | 'Delivered' | 'Cannot deliver'
-  arrivedAt?: string
-  proofId?: string
-  issue?: string
+  arrivedAt?: string | undefined
+  proofId?: string | undefined
+  issue?: string | undefined
 }
 
 export interface Evidence {
+  actorId?: number | undefined
   id: string
   kind: 'loading' | 'delivery' | 'attempt' | 'profile'
   entityId: string
   photo: Blob
   fileName: string
   createdAt: string
-  quantity?: number
-  receiver?: string
-  signature?: Blob
-  managerSignOff?: ManagerSignOff
-  receiverException?: string
+  quantity?: number | undefined
+  receiver?: string | undefined
+  signature?: Blob | undefined
+  managerSignOff?: ManagerSignOff | undefined
+  receiverException?: string | undefined
   revision: number
   accepted: boolean
 }
@@ -181,16 +184,16 @@ export interface Evidence {
 export type QueueStatus = 'pending' | 'syncing' | 'accepted' | 'review' | 'retry' | 'superseded'
 
 export interface QueuedAction {
-  actorId?: number
-  event?: DeliverySyncEvent
-  receipt?: ReceiptSyncCommand
+  actorId?: number | undefined
+  event?: DeliverySyncEvent | undefined
+  receipt?: ReceiptSyncCommand | undefined
   id: string
   evidenceId: string
   stopId: string
   createdAt: string
   status: QueueStatus
   attempts: number
-  message?: string
+  message?: string | undefined
   revision: number
   kind: 'delivery' | 'attempt'
 }
@@ -202,22 +205,22 @@ export interface TeamMember {
   role: Workspace
   status: 'Active' | 'Invited' | 'Suspended'
   onRoute: boolean
-  suspensionScheduled?: boolean
-  mobile?: string
-  depot?: string
-  assignment?: string
-  vehicleId?: string
-  outletId?: string
-  accessState?: 'Ready' | 'Invitation pending' | 'Recovery requested'
-  invitationExpiresAt?: string
+  suspensionScheduled?: boolean | undefined
+  mobile?: string | undefined
+  depot?: string | undefined
+  assignment?: string | undefined
+  vehicleId?: string | undefined
+  outletId?: string | undefined
+  accessState?: 'Ready' | 'Invitation pending' | 'Recovery requested' | undefined
+  invitationExpiresAt?: string | undefined
   /** Shown in the team list: "Just now", "05:10", "3 days ago". Blank until the person signs in. */
-  lastActive?: string
+  lastActive?: string | undefined
   /** The name this person signs in with. The password is never kept; see `NewUser`. */
-  username?: string
+  username?: string | undefined
   /** "24 September": when the person accepted their invitation. */
-  joined?: string
+  joined?: string | undefined
   /** "05:44 · near Peliyagoda": the last place or time the person was seen working. */
-  lastSeen?: string
+  lastSeen?: string | undefined
 }
 
 /** One line of a person's recent activity, newest first. */
@@ -263,36 +266,36 @@ export interface AuditEntry {
   at: string
   action: string
   detail: string
-  actor?: string
-  recordId?: string
-  recordName?: string
-  referenceWhen?: string
+  actor?: string | undefined
+  recordId?: string | undefined
+  recordName?: string | undefined
+  referenceWhen?: string | undefined
 }
 
 export interface Settings {
-  allocationReviewed?: boolean
+  allocationReviewed?: boolean | undefined
   cutoffClosed: boolean
   published: boolean
   routeStarted: boolean
-  routeStartedAt?: string
+  routeStartedAt?: string | undefined
   routeRevision: number
   simulatedOffline: boolean
   syncOutcome: 'accepted' | 'review' | 'retry'
   profileName: string
-  notificationsReadAt?: string
-  profilePhotoId?: string
-  profileLanguage?: string
-  emergencyContact?: string
+  notificationsReadAt?: string | undefined
+  profilePhotoId?: string | undefined
+  profileLanguage?: string | undefined
+  emergencyContact?: string | undefined
   profilePhone: string
   notifications: boolean
   compactRows: boolean
 }
 
 export interface Snapshot {
-  routeEvents?: import('@/types/routeHistory').RouteEvent[]
-  pendingPushSubscriptions?: WebPushRegistration[]
-  pendingPositions?: DevicePosition[]
-  deliveryNotices?: DeliveryNotice[]
+  routeEvents?: import('@/types/routeHistory').RouteEvent[] | undefined
+  pendingPushSubscriptions?: WebPushRegistration[] | undefined
+  pendingPositions?: DevicePosition[] | undefined
+  deliveryNotices?: DeliveryNotice[] | undefined
   orders: Order[]
   vehicles: Vehicle[]
   loads: Load[]
@@ -306,27 +309,27 @@ export interface Snapshot {
     temperature: Temperature
     cases: number
     window: string
-    weight?: number
-    volume?: number
-    windowEnd?: string
+    weight?: number | undefined
+    volume?: number | undefined
+    windowEnd?: string | undefined
     /** The outlet that saved it; absent on drafts saved before outlets were tracked (OUT001). */
-    outlet?: string
+    outlet?: string | undefined
   }[]
   /** Earlier orders, kept apart from the live orders so planning screens are unaffected. */
-  orderHistory?: Order[]
-  orderHistoryVersion?: number
+  orderHistory?: Order[] | undefined
+  orderHistoryVersion?: number | undefined
   /** Every outlet in the system; administrators add to it and store managers are assigned from it. */
-  outlets?: OutletProfile[]
-  outletsVersion?: number
-  teamDetailVersion?: number
-  unlistedTeamCounts?: { Active: number; Invited: number; Suspended: number }
-  fleetReferenceVersion?: number
-  designDataVersion?: number
-  activeDriverId?: string
+  outlets?: OutletProfile[] | undefined
+  outletsVersion?: number | undefined
+  teamDetailVersion?: number | undefined
+  unlistedTeamCounts?: { Active: number; Invited: number; Suspended: number } | undefined
+  fleetReferenceVersion?: number | undefined
+  designDataVersion?: number | undefined
+  activeDriverId?: string | undefined
   /** Demo only: which outlet the store manager workspace is signed in as (default: the member's). */
-  activeOutletId?: string
-  unlistedAuditCount?: number
-  auditReferenceVersion?: number
+  activeOutletId?: string | undefined
+  unlistedAuditCount?: number | undefined
+  auditReferenceVersion?: number | undefined
   /** Set once the demo's sample data has been replaced by an empty start (real-backend use). */
-  demoPurged?: boolean
+  demoPurged?: boolean | undefined
 }

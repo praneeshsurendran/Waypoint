@@ -1,6 +1,6 @@
+import { getUser } from '@/infrastructure/storage/authSession'
 import type { AccountApi } from '@/types/api/account'
 import type { Settings } from '@/types/models'
-import { getUser } from '@/infrastructure/storage/authSession'
 
 export const devicePrefsKey = 'waypoint.account.preferences'
 

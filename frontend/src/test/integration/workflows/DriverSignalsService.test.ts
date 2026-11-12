@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { WaypointDatabase } from '@/infrastructure/storage/database'
@@ -89,14 +90,14 @@ describe('frontend delivery signals', () => {
     })
     await service.arrive('STOP001')
     await repository.update((snapshot) => {
-      snapshot.stops[0].arrivedAt = '2026-10-03T07:20:00+05:30'
+      required(snapshot.stops[0]).arrivedAt = '2026-10-03T07:20:00+05:30'
     })
     await signals.checkDeliveryWindows('2026-10-03T07:45:00+05:30')
     expect((await signals.listNotices('OUT001')).some((notice) => notice.kind === 'deadline')).toBe(
       false,
     )
     await repository.update((snapshot) => {
-      snapshot.stops[0].arrivedAt = '2026-10-03T07:40:00+05:30'
+      required(snapshot.stops[0]).arrivedAt = '2026-10-03T07:40:00+05:30'
     })
     await service.reportDelay('STOP001', 'Loading dock occupied')
     await signals.checkDeliveryWindows('2026-10-03T07:45:00+05:30')
@@ -104,9 +105,9 @@ describe('frontend delivery signals', () => {
     const notices = await signals.listNotices('OUT001')
     expect(notices.map((notice) => notice.kind).sort()).toEqual(['arrival', 'deadline', 'delay'])
     expect(notices.every((notice) => notice.delivery === 'local')).toBe(true)
-    await signals.acknowledgeNotice(notices[0].id)
+    await signals.acknowledgeNotice(required(notices[0]).id)
     const reloaded = new DriverSignalsService(new DexieOperationsRepository(db))
-    expect((await reloaded.listNotices('OUT001'))[0].readAt).toBeDefined()
+    expect(required((await reloaded.listNotices('OUT001'))[0]).readAt).toBeDefined()
     expect(
       (await reloaded.listNotices('OUT008')).every((notice) => notice.outletId === 'OUT008'),
     ).toBe(true)

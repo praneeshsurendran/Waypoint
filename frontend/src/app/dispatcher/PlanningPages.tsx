@@ -672,8 +672,8 @@ export function DeferralsPage() {
 
       {priorityViolations.length > 0 && (
         <Notice tone="danger" title="Consecutive unserved day blocked">
-          {priorityViolations[0].outlet} was skipped on the previous run. It cannot be deferred
-          again. Allocate order {priorityViolations[0].id} to continue.
+          {priorityViolations[0]?.outlet} was skipped on the previous run. It cannot be deferred
+          again. Allocate order {priorityViolations[0]?.id} to continue.
         </Notice>
       )}
       {!allRecorded && priorityViolations.length === 0 && deferred.length > 0 && (

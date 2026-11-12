@@ -36,12 +36,14 @@ export function useWebPushSubscription(outletId?: string, refreshPermission?: ()
       const json = subscription.toJSON()
       if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth)
         throw new Error('The browser did not return a complete push subscription.')
+      const endpoint = json.endpoint
+      const keys = { p256dh: json.keys.p256dh, auth: json.keys.auth }
       await action.mutateAsync(() =>
         apis.driverSignals.registerPushSubscription({
           outletId,
-          endpoint: json.endpoint!,
+          endpoint,
           expirationTime: json.expirationTime ?? null,
-          keys: { p256dh: json.keys!.p256dh, auth: json.keys!.auth },
+          keys,
           createdAt: new Date().toISOString(),
         }),
       )

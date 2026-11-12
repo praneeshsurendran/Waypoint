@@ -1,14 +1,16 @@
 from __future__ import annotations
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
 
 
-def _make_engine():
+def _make_engine() -> Engine:
     settings = get_settings()
     from waypoint_security import validate_runtime
 

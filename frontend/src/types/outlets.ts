@@ -26,7 +26,7 @@ export interface OutletProfile {
   depot: string
   receiving: ReceivingLimits
   /** `outlets.csv` `parking_constraint`: any vehicle, vans only, or the mall's delivery window. */
-  parking?: Parking
+  parking?: Parking | undefined
   /** True for mall outlets, which accept deliveries only in the mall's fixed access window. */
   mall: boolean
   /** How often this brand orders: Style weekly for a scheduled day, Tech as needed. */
@@ -35,7 +35,7 @@ export interface OutletProfile {
    * The outlet's own delivery window ("HH:MM"), fixed in the outlet data (a mall's access window for
    * mall outlets). Orders do not carry a window of their own. Unset where the source has none.
    */
-  window?: { start: string; end: string }
+  window?: { start: string; end: string } | undefined
 }
 
 /** What an administrator enters to add an outlet; the system assigns the id. */

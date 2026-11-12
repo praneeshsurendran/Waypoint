@@ -7,6 +7,8 @@ Usage:
 
 from __future__ import annotations
 
+from sqlalchemy.orm import Session
+
 import argparse
 import csv
 import datetime as dt
@@ -14,6 +16,7 @@ import logging
 import random
 import sys
 from pathlib import Path
+from typing import TypedDict, NotRequired
 
 # Allow running from api/ directory
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -39,8 +42,20 @@ from seed.geo import depot_coords, outlet_coords
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger("seed")
 
+
 # ── Demo credentials ────────────────────────────────────────────────────────
-DEMO_USERS = [
+class DemoAccount(TypedDict):
+    username: str
+    password: str
+    full_name: str
+    role: str
+    outlet_id: str | None
+    vehicle_id: str | None
+    depot_id: str | None
+    phone: NotRequired[str]
+
+
+DEMO_USERS: list[DemoAccount] = [
     {
         "username": "dispatcher",
         "password": "demo-dispatch-1",
@@ -140,7 +155,7 @@ def _read_csv(filename: str) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-def _upsert_depot(db, row: dict) -> None:
+def _upsert_depot(db: Session, row: dict) -> None:
     lat, lng = depot_coords(row["code"])
     stmt = (
         pg_insert(Depot)
@@ -153,7 +168,7 @@ def _upsert_depot(db, row: dict) -> None:
     db.execute(stmt)
 
 
-def seed_depots(db) -> None:
+def seed_depots(db: Session) -> None:
     log.info("Seeding depots…")
     depots = [
         {"code": "Peliyagoda", "name": "Peliyagoda Distribution Centre"},
@@ -165,7 +180,7 @@ def seed_depots(db) -> None:
     log.info("  ✓ %d depots", len(depots))
 
 
-def seed_outlets(db) -> None:
+def seed_outlets(db: Session) -> None:
     log.info("Seeding outlets…")
     rows = _read_csv("outlets.csv")
     if len(rows) != 120:
@@ -262,7 +277,7 @@ def seed_outlets(db) -> None:
             )
 
 
-def seed_vehicles(db) -> None:
+def seed_vehicles(db: Session) -> None:
     log.info("Seeding vehicles…")
     rows = _read_csv("vehicles.csv")
     if len(rows) != 60:
@@ -343,7 +358,7 @@ def seed_vehicles(db) -> None:
     )
 
 
-def seed_calendar(db) -> None:
+def seed_calendar(db: Session) -> None:
     log.info("Seeding calendar…")
     rows = _read_csv("calendar.csv")
 
@@ -403,7 +418,7 @@ def seed_calendar(db) -> None:
     log.info("  ✓ %d calendar days (%s → %s)", len(rows), rows[0]["date"], rows[-1]["date"])
 
 
-def seed_users(db) -> None:
+def seed_users(db: Session) -> None:
     log.info("Seeding demo users…")
     # Find a Kandy vehicle for driver_kandy
     kandy_vehicle = (
@@ -447,7 +462,7 @@ def seed_users(db) -> None:
     log.info("  ✓ %d demo users", len(DEMO_USERS))
 
 
-def _next_demo_delivery_date(db) -> dt.date:
+def _next_demo_delivery_date(db: Session) -> dt.date:
     """Return DEMO_DELIVERY_DATE from settings if it's a valid operating day."""
     from app.core.config import get_settings
 
@@ -467,16 +482,20 @@ def _next_demo_delivery_date(db) -> dt.date:
             .order_by(CalendarDay.festival_ramp.desc(), CalendarDay.date)
             .first()
         )
+        if cal is None:
+            raise ValueError("Seed calendar contains no operating day")
         delivery = cal.date
         log.info("  Using auto-selected delivery date: %s", delivery)
     return delivery
 
 
-def seed_demo_orders(db) -> dt.date:
+def seed_demo_orders(db: Session) -> dt.date:
     """Seed a realistic overloaded delivery day. Returns the delivery date."""
     log.info("Seeding demo orders…")
     delivery_date = _next_demo_delivery_date(db)
     cal = db.get(CalendarDay, delivery_date)
+    if cal is None:
+        raise ValueError("Seed calendar does not contain the delivery date")
     log.info(
         "  Delivery date: %s (payday=%s, festival=%s, ramp=%.2f, monsoon=%s)",
         delivery_date,
@@ -649,7 +668,7 @@ def seed_demo_orders(db) -> dt.date:
     return delivery_date
 
 
-def seed_history_deferrals(db, delivery_date: dt.date) -> None:
+def seed_history_deferrals(db: Session, delivery_date: dt.date) -> None:
     """Seed a previous day's deferrals so consecutive_count=1 for 3-5 outlets."""
     log.info("Seeding deferral history…")
     tz = dt.timezone(dt.timedelta(hours=5, minutes=30))
@@ -751,10 +770,12 @@ def seed_history_deferrals(db, delivery_date: dt.date) -> None:
     log.info("  ✓ Deferred %d outlets on %s", len(deferred_outlets), prev_date)
 
 
-def seed_vehicle_fuel(db, delivery_date: dt.date) -> None:
+def seed_vehicle_fuel(db: Session, delivery_date: dt.date) -> None:
     """Seed vehicle_weekly_fuel so ~5 vehicles are close to their weekly quota."""
     log.info("Seeding vehicle weekly fuel…")
     cal = db.get(CalendarDay, delivery_date)
+    if cal is None:
+        raise ValueError("Seed calendar does not contain the delivery date")
     if not cal:
         log.warning("  Calendar day not found, skipping fuel seed")
         return
@@ -806,7 +827,7 @@ def seed_vehicle_fuel(db, delivery_date: dt.date) -> None:
     )
 
 
-def seed_sample_plan(db, delivery_date: dt.date) -> None:
+def seed_sample_plan(db: Session, delivery_date: dt.date) -> None:
     """
     Insert a published plan for a second day (for quick loader/driver demo).
     This is triggered by --with-sample-plan flag.
@@ -947,7 +968,7 @@ def main(with_sample_plan: bool = False) -> None:
         log.info("")
         log.info("Demo credentials:")
         for u in DEMO_USERS:
-            log.info("  %-20s  password: %s  role: %s", u["username"], u["password"], u["role"])
+            log.info("  %-20s  role: %s", u["username"], u["role"])
 
     except Exception as e:
         db.rollback()

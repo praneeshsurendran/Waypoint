@@ -32,7 +32,7 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = ["src", "../../packages/contracts", "../../packages/security", "../../packages/observability", "../../packages/messaging"]
+pythonpath = ["src", "../../packages/contracts", "../../packages/security", "../../packages/observability", "../../packages/messaging", "../../packages/runtime"]
 testpaths = ["tests"]
 
 [tool.ruff]

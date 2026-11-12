@@ -11,7 +11,7 @@ export function OrderTable({
 }: {
   orders: Order[]
   onSelect: (order: Order) => void
-  compact?: boolean
+  compact?: boolean | undefined
 }) {
   const [sort, setSort] = useState<'window' | 'volume' | 'weight' | 'temperature'>('window')
   const [descending, setDescending] = useState(false),

@@ -1,17 +1,21 @@
 """Deferrals router — dispatcher views and manages deferrals."""
 
 from __future__ import annotations
-import datetime as dt
+
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.order import DeferralCreate, DeferralHistoryOut
+from waypoint_contracts.plan import DeferralOut
+
+import datetime as dt
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.core import clock
 from app.infrastructure.db.models.deferral import Deferral
 from app.infrastructure.db.models.order import Order
 from app.infrastructure.db.models.plan import Plan
 from app.infrastructure.db.models.reference import CalendarDay
-from waypoint_contracts.order import DeferralCreate
 from app.services.audit import log_action
 from app.application.use_cases.plans import _detach_order_from_plan
 from app.services.calendar import previous_operating_day
@@ -23,7 +27,7 @@ _DISPATCHER = None
 
 def create_deferral(
     body: DeferralCreate, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER
-):
+) -> DeferralOut:
     order = db.get(Order, body.order_id)
     if not order:
         raise HTTPException(
@@ -90,7 +94,7 @@ def create_deferral(
     )
     db.commit()
     db.refresh(deferral)
-    return deferral
+    return TypeAdapter(DeferralOut).validate_python(deferral)
 
 
 def list_deferrals(
@@ -98,20 +102,22 @@ def list_deferrals(
     current_user: CurrentUser,
     _: None = _DISPATCHER,
     date: Optional[dt.date] = None,
-):
+) -> list[DeferralOut]:
     q = db.query(Deferral)
     if date:
         from app.infrastructure.db.models.plan import Plan
 
         q = q.join(Plan, Deferral.plan_id == Plan.id).filter(Plan.delivery_date == date)
-    return q.order_by(Deferral.decided_at.desc()).all()
+    return TypeAdapter(list[DeferralOut]).validate_python(
+        q.order_by(Deferral.decided_at.desc()).all()
+    )
 
 
 def outlet_deferral_history(
     outlet_id: str, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER
-):
+) -> list[DeferralHistoryOut]:
     """Returns the deferral history for a specific outlet (via its orders)."""
-    return (
+    return TypeAdapter(list[DeferralHistoryOut]).validate_python(
         db.query(Deferral)
         .join(Order, Deferral.order_id == Order.id)
         .filter(Order.outlet_id == outlet_id)

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+
 import datetime as dt
 from typing import Any, Optional, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
+from waypoint_contracts.common import ContractModel as BaseModel
 
 from waypoint_contracts.common import OrmModel
 
@@ -100,7 +102,7 @@ class DeliveryEventIn(BaseModel):
     device_sequence: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
-    def paired_device(self):
+    def paired_device(self) -> "DeliveryEventIn":
         if (self.device_id is None) != (self.device_sequence is None):
             raise ValueError("device_id and device_sequence must be supplied together")
         if self.recorded_at is not None and self.recorded_at.tzinfo is None:

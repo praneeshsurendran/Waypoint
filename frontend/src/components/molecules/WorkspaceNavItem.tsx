@@ -13,12 +13,12 @@ export function WorkspaceNavItem({
   onNavigate,
 }: {
   item: NavItem
-  snapshot?: Snapshot
+  snapshot?: Snapshot | undefined
   session: Session
   className: string
-  showIcon?: boolean
-  menuLabel?: boolean
-  onNavigate?: () => void
+  showIcon?: boolean | undefined
+  menuLabel?: boolean | undefined
+  onNavigate?: (() => void) | undefined
 }) {
   const location = useLocation()
   const active = (item.activePaths ?? [item.path]).some(

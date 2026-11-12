@@ -1,6 +1,9 @@
 """Map domain conflicts to the established frontend error contract."""
 
 from fastapi import HTTPException
+from app.domain.workflow import StatusEntity
+from app.infrastructure.db.models.order import Order
+from app.infrastructure.db.models.plan import Trip, Stop
 from app.domain.workflow import (
     InvalidTransition,
     transition,
@@ -10,7 +13,7 @@ from app.domain.workflow import (
 )
 
 
-def _transition(entity, new_status, table):
+def _transition(entity: StatusEntity, new_status: str, table: dict[str, set[str]]) -> None:
     try:
         transition(entity, new_status, table)
     except InvalidTransition as exc:
@@ -28,13 +31,13 @@ def _transition(entity, new_status, table):
         ) from exc
 
 
-def transition_order(order, new_status):
+def transition_order(order: Order, new_status: str) -> None:
     _transition(order, new_status, ORDER_TRANSITIONS)
 
 
-def transition_trip(trip, new_status):
+def transition_trip(trip: Trip, new_status: str) -> None:
     _transition(trip, new_status, TRIP_TRANSITIONS)
 
 
-def transition_stop(stop, new_status):
+def transition_stop(stop: Stop, new_status: str) -> None:
     _transition(stop, new_status, STOP_TRANSITIONS)

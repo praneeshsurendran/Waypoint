@@ -77,3 +77,17 @@ backend change does not edit frontend screens or those E2E specs. The comparison
 - `src/test/e2e/features/store-manager.spec.ts:569:3 › store manager › contact details edited offline are sent later`
 - `src/test/e2e/features/store-manager.spec.ts:583:3 › store manager › a Tech outlet can have several orders and change one of them`
 - `src/test/e2e/navigation/routes.spec.ts:107:1 › the root opens the welcome page and leads to sign-in and workspaces`
+
+## Subsequent full-stack audit (2026-11-13)
+
+The baseline above is preserved as historical evidence. The later audit corrected the
+obsolete driver-navigation setup, loader publication navigation and ambiguous loader link
+selection, preserving the original behavioral assertions. The latest complete suite result
+is **78 passed / 21 failed** of all 99 cases. No case was deleted or skipped. Source test
+fixtures now also use explicit required-value guards under strict array-index checks.
+
+The exact remaining inventory and separate passing real-backend Docker/browser checks are
+in [the full-stack audit](../../docs/backend-audit-and-optimization.md). Existing quantity,
+profile/navigation, map-style and suspension-option mismatches remain visible; the frontend
+was not redesigned to satisfy stale tests. The full historical browser acceptance criterion
+is not yet met. Raw final traces remain under `/private/tmp/waypoint-playwright-bounded-results`.

@@ -209,7 +209,9 @@ export class OperationsService {
       s.stops = []
       for (const key of keys) {
         const assigned = scheduled.filter((order) => `${order.vehicleId}:${order.trip}` === key)
-        const { vehicleId, trip } = assigned[0]
+        const first = assigned[0]
+        assert(first, 'Published trip has no orders.')
+        const { vehicleId, trip } = first
         assert(vehicleId && trip, 'Published orders need a vehicle and trip.')
         const existing = previousLoads.find(
           (load) => load.vehicleId === vehicleId && load.trip === trip,
@@ -220,19 +222,21 @@ export class OperationsService {
             assigned
               .filter((order) => order.outlet === outlet)
               .map((order) => order.window)
-              .sort()[0]
+              .sort()[0] ?? ''
           return earliest(a).localeCompare(earliest(b)) || a.localeCompare(b)
         })
         const stops = outlets.map((outlet, index) => {
           const orders = assigned.filter((order) => order.outlet === outlet)
           const old = previousStops.find((stop) => stop.outlet === outlet)
-          const windowStart = orders.map((order) => order.window).sort()[0]
+          const firstOrder = orders[0]
+          assert(firstOrder, 'Published stop has no orders.')
+          const windowStart = orders.map((order) => order.window).sort()[0] ?? firstOrder.window
           const baseId = `STOP${outlet.slice(3)}`
           return {
             id: s.stops.some((stop) => stop.id === baseId) ? `${baseId}-${loadId}` : baseId,
             loadId,
             outlet,
-            name: orders[0].outletName,
+            name: firstOrder.outletName,
             address: old?.address ?? `${outlet} receiving bay · demo location`,
             window: `${windowStart}–${
               orders
@@ -1547,6 +1551,7 @@ export class OperationsService {
           ...s.vehicles.map((vehicle) => Number(/^VEH(\d+)$/.exec(vehicle.id)?.[1] ?? 0)),
         )
         const at = depotCoordinates[input.depot]
+        assert(at, 'Choose a known depot.')
         created = {
           id: `VEH${String(highest + 1).padStart(3, '0')}`,
           brand: input.brand,

@@ -1,3 +1,6 @@
+from collections.abc import Mapping
+from sqlalchemy.orm import Session
+from pydantic import JsonValue
 from datetime import datetime, timezone
 from sqlalchemy import JSON, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -19,16 +22,22 @@ class AuditLog(Base):
 
 
 def log_action(
-    db, action, entity_type, entity_id, actor_user_id=None, before=None, after=None
-):
+    db: Session,
+    action: str,
+    entity_type: str,
+    entity_id: str | int,
+    actor_user_id: int | None = None,
+    before: Mapping[str, JsonValue] | None = None,
+    after: Mapping[str, JsonValue] | None = None,
+) -> None:
     db.add(
         AuditLog(
             actor_user_id=actor_user_id,
             action=action,
             entity_type=entity_type,
             entity_id=str(entity_id),
-            before_json=before,
-            after_json=after,
+            before_json=dict(before) if before is not None else None,
+            after_json=dict(after) if after is not None else None,
         )
     )
     db.flush()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -64,5 +65,5 @@ class DeliveryEvent(Base):
         Integer, ForeignKey("users.id"), nullable=True
     )
 
-    stop_rel: Mapped["Stop"] = relationship("Stop", back_populates="delivery_events")  # type: ignore[name-defined]
-    order_rel: Mapped["Order"] = relationship("Order", back_populates="delivery_events")  # type: ignore[name-defined]
+    stop_rel: Mapped["Stop"] = relationship("Stop", back_populates="delivery_events")
+    order_rel: Mapped["Order"] = relationship("Order", back_populates="delivery_events")

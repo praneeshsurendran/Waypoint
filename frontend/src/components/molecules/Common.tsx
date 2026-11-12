@@ -18,10 +18,10 @@ export function PageHeading({
   description,
   action,
 }: {
-  eyebrow?: string
+  eyebrow?: string | undefined
   title: string
-  description?: string
-  action?: ReactNode
+  description?: string | undefined
+  action?: ReactNode | undefined
 }) {
   return (
     <div className="page-heading">
@@ -43,9 +43,9 @@ export function Metric({
 }: {
   label: string
   value: ReactNode
-  detail?: string
-  icon?: ReactNode
-  tone?: string
+  detail?: string | undefined
+  icon?: ReactNode | undefined
+  tone?: string | undefined
 }) {
   return (
     <div className="metric">
@@ -63,7 +63,7 @@ export function StatusBadge({
   tone,
 }: {
   children: ReactNode
-  tone?: 'success' | 'warning' | 'danger' | 'neutral' | 'orange'
+  tone?: 'success' | 'warning' | 'danger' | 'neutral' | 'orange' | undefined
 }) {
   const text = String(children)
   const inferred =
@@ -90,8 +90,8 @@ export function Notice({
   tone = 'warning',
 }: {
   title: string
-  children?: ReactNode
-  tone?: 'warning' | 'success' | 'neutral' | 'danger'
+  children?: ReactNode | undefined
+  tone?: 'warning' | 'success' | 'neutral' | 'danger' | undefined
 }) {
   return (
     <div role="status" className={cn('notice', `notice-${tone}`)}>
@@ -111,8 +111,8 @@ export function SearchField({
 }: {
   value: string
   onChange: (v: string) => void
-  placeholder?: string
-  label?: string
+  placeholder?: string | undefined
+  label?: string | undefined
 }) {
   return (
     <div className="relative">
@@ -143,7 +143,7 @@ export function Field({
 }: {
   label: string
   children: ReactNode
-  hint?: string
+  hint?: string | undefined
 }) {
   return (
     <label className="field">
@@ -159,8 +159,8 @@ export function EmptyState({
   action,
 }: {
   title: string
-  description?: string
-  action?: ReactNode
+  description?: string | undefined
+  action?: ReactNode | undefined
 }) {
   return (
     <div className="empty-state">
@@ -182,7 +182,7 @@ export function CapacityBar({
   label: string
   used: number
   total: number
-  unit?: string
+  unit?: string | undefined
 }) {
   const ratio = total > 0 ? Math.round((used / total) * 100) : 0
   return (
@@ -216,11 +216,11 @@ export function Panel({
   children,
   className,
 }: {
-  title?: string
-  description?: string
-  action?: ReactNode
+  title?: string | undefined
+  description?: string | undefined
+  action?: ReactNode | undefined
   children: ReactNode
-  className?: string
+  className?: string | undefined
 }) {
   return (
     <section className={cn('panel', className)}>
@@ -246,11 +246,11 @@ export function Modal({
   side,
 }: {
   title: string
-  description?: string
+  description?: string | undefined
   open: boolean
   onOpenChange: (v: boolean) => void
   children: ReactNode
-  side?: boolean
+  side?: boolean | undefined
 }) {
   const opener = useRef<HTMLElement | null>(null)
   return (

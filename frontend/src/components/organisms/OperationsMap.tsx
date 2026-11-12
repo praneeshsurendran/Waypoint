@@ -41,17 +41,17 @@ export default function OperationsMap({
   showCaption = true,
   vehicleOrders = {},
 }: {
-  vehicles?: Vehicle[]
-  stops?: Stop[]
-  selectedVehicleId?: string | null
-  offline?: boolean
-  onVehicleSelect?: (vehicle: Vehicle) => void
-  delayedVehicleIds?: string[]
-  fitRoute?: boolean
-  recenterKey?: number
-  selectedStopId?: string
-  showCaption?: boolean
-  vehicleOrders?: Record<string, string[]>
+  vehicles?: Vehicle[] | undefined
+  stops?: Stop[] | undefined
+  selectedVehicleId?: string | null | undefined
+  offline?: boolean | undefined
+  onVehicleSelect?: ((vehicle: Vehicle) => void) | undefined
+  delayedVehicleIds?: string[] | undefined
+  fitRoute?: boolean | undefined
+  recenterKey?: number | undefined
+  selectedStopId?: string | undefined
+  showCaption?: boolean | undefined
+  vehicleOrders?: Record<string, string[]> | undefined
 }) {
   const connected = useConnectivity()
   const [hoveredVehicleId, setHoveredVehicleId] = useState<string | null>(null)

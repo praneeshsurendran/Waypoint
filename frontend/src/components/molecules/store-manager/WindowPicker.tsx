@@ -34,10 +34,10 @@ export function WindowPicker({
   limits = FRESH_LIMITS,
   onChange,
 }: {
-  label?: string
-  limits?: ReceivingLimits
+  label?: string | undefined
+  limits?: ReceivingLimits | undefined
   value: string
-  error?: string
+  error?: string | undefined
   onChange: (window: string) => void
 }) {
   const current = parseWindow(value)
@@ -49,7 +49,7 @@ export function WindowPicker({
     const options = endOptions(next, limits)
     const wanted = minutes(next) + length
     const kept = [...options].reverse().find((time) => minutes(time) <= wanted)
-    onChange(formatWindow(next, kept ?? options[0]))
+    onChange(formatWindow(next, kept ?? options[0] ?? next))
   }
   return (
     <fieldset className="sm-window">

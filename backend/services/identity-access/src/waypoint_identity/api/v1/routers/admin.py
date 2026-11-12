@@ -1,4 +1,7 @@
 from __future__ import annotations
+from typing import Annotated
+from pydantic import TypeAdapter
+
 from fastapi import APIRouter, status
 from waypoint_identity.api.dependencies import DbDep, require_role
 from waypoint_identity.infrastructure.db.accounts import User
@@ -16,26 +19,40 @@ _ADMIN = require_role("ADMIN")
 
 
 @router.get("/users", response_model=list[AdminUserOut])
-def list_users(db: DbDep, _: object = _ADMIN):
-    return use_cases.list_users(db=db, _=_)
+def list_users(db: DbDep, _: object = _ADMIN) -> list[AdminUserOut]:
+    return TypeAdapter(list[AdminUserOut]).validate_python(
+        use_cases.list_users(db=db, _=None)
+    )
 
 
 @router.post("/users", response_model=AdminUserOut, status_code=status.HTTP_201_CREATED)
-def create_user(body: AdminUserCreate, db: DbDep, admin: User = _ADMIN):
-    return use_cases.create_user(body=body, db=db, admin=admin)
+def create_user(
+    body: AdminUserCreate, db: DbDep, admin: Annotated[User, _ADMIN]
+) -> AdminUserOut:
+    return TypeAdapter(AdminUserOut).validate_python(
+        use_cases.create_user(body=body, db=db, admin=admin)
+    )
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserOut)
-def update_user(user_id: int, body: AdminUserUpdate, db: DbDep, admin: User = _ADMIN):
-    return use_cases.update_user(user_id=user_id, body=body, db=db, admin=admin)
+def update_user(
+    user_id: int, body: AdminUserUpdate, db: DbDep, admin: Annotated[User, _ADMIN]
+) -> AdminUserOut:
+    return TypeAdapter(AdminUserOut).validate_python(
+        use_cases.update_user(user_id=user_id, body=body, db=db, admin=admin)
+    )
 
 
 @router.post("/users/{user_id}/reassign-trip", status_code=status.HTTP_204_NO_CONTENT)
-def reassign_trip(user_id: int, body: TripReassign, db: DbDep, admin: User = _ADMIN):
+def reassign_trip(
+    user_id: int, body: TripReassign, db: DbDep, admin: Annotated[User, _ADMIN]
+) -> None:
     """Hands a driver's vehicle, and so the trip on it, to another driver at the same depot."""
     return use_cases.reassign_trip(user_id=user_id, body=body, db=db, admin=admin)
 
 
 @router.post("/users/{user_id}/reset-password", status_code=status.HTTP_204_NO_CONTENT)
-def reset_password(user_id: int, body: PasswordReset, db: DbDep, admin: User = _ADMIN):
+def reset_password(
+    user_id: int, body: PasswordReset, db: DbDep, admin: Annotated[User, _ADMIN]
+) -> None:
     return use_cases.reset_password(user_id=user_id, body=body, db=db, admin=admin)

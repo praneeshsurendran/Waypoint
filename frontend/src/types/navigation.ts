@@ -16,32 +16,40 @@ export interface NavItem {
   label: string
   path: string
   icon: LucideIcon
-  activePaths?: string[]
-  availability?: (
-    snapshot: Snapshot,
-    session: Session,
-  ) => { path?: string; disabledReason?: string }
+  activePaths?: string[] | undefined
+  availability?:
+    | ((
+        snapshot: Snapshot,
+        session: Session,
+      ) => { path?: string | undefined; disabledReason?: string | undefined })
+    | undefined
   /** Draws a custom icon (e.g. from the design) instead of `icon`; `active` marks the current page. */
-  renderIcon?: (active: boolean) => ReactNode
+  renderIcon?: ((active: boolean) => ReactNode) | undefined
   /** Label in the compact navigation menu when it differs from the sidebar label. */
-  menuLabel?: string
+  menuLabel?: string | undefined
 }
 /** How a role's workspace chrome behaves. Everything is optional; defaults suit most roles. */
 export interface ShellOptions {
   /** Width below which the sidebar gives way to the compact header. Default 761. */
-  compactBelow?: number
+  compactBelow?: number | undefined
   /** Compact navigation: a bottom tab bar ('tabs', default) or only the header menu ('menu'). */
-  compactNav?: 'tabs' | 'menu'
+  compactNav?: 'tabs' | 'menu' | undefined
   /** Show the Recovery link in the sidebar. Default true. */
-  recoveryLink?: boolean
+  recoveryLink?: boolean | undefined
   /** Sidebar footer text. Defaults to the person's name and assignment. */
-  identity?: (session: Session) => { title: string; subtitle: string }
+  identity?: ((session: Session) => { title: string; subtitle: string }) | undefined
   /** Second line of the compact header, e.g. "Store · OUT001". */
-  compactSubtitle?: (session: Session) => string
+  compactSubtitle?: ((session: Session) => string) | undefined
   /** Number shown on the header bell (e.g. unacknowledged alerts). Hidden when 0 or absent. */
   /** Role-specific account pages for the bell and the account menu; the shared ones are used otherwise. */
-  accountPaths?: { profile?: string; settings?: string; notifications?: string }
-  alertCount?: (snapshot: Snapshot, session: Session) => number
+  accountPaths?:
+    | {
+        profile?: string | undefined
+        settings?: string | undefined
+        notifications?: string | undefined
+      }
+    | undefined
+  alertCount?: ((snapshot: Snapshot, session: Session) => number) | undefined
 }
 export interface SearchResult {
   id: string
@@ -68,6 +76,6 @@ export interface RoleModule extends AppModule {
   home: string
   nav: NavItem[]
   /** Optional header search; the shell's order and vehicle search is used otherwise. */
-  search?: HeaderSearch
-  shell?: ShellOptions
+  search?: HeaderSearch | undefined
+  shell?: ShellOptions | undefined
 }

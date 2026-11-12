@@ -3,16 +3,18 @@ const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz'
 const digits = '23456789'
 const alphabet = letters + digits
 
-const pick = (set: string, random: number) => set[random % set.length]
+const pick = (set: string, random: number) => set.charAt(random % set.length)
 
 /** A temporary password the administrator hands over: 12 characters, always letters and numbers. */
 export function generatePassword(length = 12): string {
+  if (!Number.isInteger(length) || length < 2 || length > 72)
+    throw new RangeError('Password length must be between 2 and 72.')
   const bytes = new Uint32Array(length)
   crypto.getRandomValues(bytes)
   const chars = Array.from(bytes, (value) => pick(alphabet, value))
   // Guarantee both kinds, so it always passes the same rule the account service applies.
-  chars[0] = pick(letters, bytes[0])
-  chars[length - 1] = pick(digits, bytes[length - 1])
+  chars[0] = pick(letters, bytes[0] ?? 0)
+  chars[length - 1] = pick(digits, bytes[length - 1] ?? 0)
   return chars.join('')
 }
 

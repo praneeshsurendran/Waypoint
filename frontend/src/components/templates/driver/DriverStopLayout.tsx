@@ -20,9 +20,9 @@ export function DriverStopLayout({
   state: DriverStopState
   title: string
   children: ReactNode
-  proofStep?: boolean
-  requireDraft?: boolean
-  wide?: boolean
+  proofStep?: boolean | undefined
+  requireDraft?: boolean | undefined
+  wide?: boolean | undefined
 }) {
   useBreadcrumb([{ label: 'Current route', to: '/driver/route' }, { label: title }])
   if (proofStep && state.record)

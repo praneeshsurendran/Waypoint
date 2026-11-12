@@ -1,20 +1,19 @@
 import * as ordersApi from '@/api/endpoints/orders'
 import * as referenceApi from '@/api/endpoints/reference'
+import { mapOrder } from '@/mappers/operations'
 import type { OrdersApi, ReceiptIssue } from '@/types/api/orders'
 import type { ApiOrder } from '@/types/api/responses'
-import { mapOrder } from '@/mappers/operations'
 
 import type { OutletProfile } from '@/types/outlets'
 import { profileFromReference } from '@/utils/outlets'
-import type { ApiOutlet } from '@/types/api/reference'
 
 export async function deliveryDay(): Promise<{
-  date?: string
-  next?: string
-  published?: boolean
+  date?: string | undefined
+  next?: string | undefined
+  published?: boolean | undefined
 }> {
   type Intake = { delivery_date?: string; next_delivery_date?: string; published?: boolean }
-  const intake = await ordersApi.getOrdersIntakeStatus<Intake>().catch(() => ({}) as Intake)
+  const intake = await ordersApi.getOrdersIntakeStatus().catch(() => ({}) as Intake)
   return {
     date: intake.delivery_date,
     next: intake.next_delivery_date ?? intake.delivery_date,
@@ -31,7 +30,7 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
       if (filter.status) params.set('status', filter.status.toUpperCase())
       if (filter.date) params.set('date', filter.date)
       const [orders, intake] = await Promise.all([
-        ordersApi.getOrders<ApiOrder[]>(params),
+        ordersApi.getOrders(params),
         filter.outletId ? deliveryDay() : Promise.resolve(undefined),
       ])
       // For one outlet this is the next delivery; its earlier orders come from listHistory.
@@ -63,21 +62,13 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
     },
 
     async getIntakeStatus() {
-      const data = await ordersApi
-        .getOrdersIntakeStatus<{
-          cutoff_closed: boolean
-          published: boolean
-          now?: string
-          delivery_date?: string
-          next_delivery_date?: string
-        }>()
-        .catch(() => ({
-          cutoff_closed: false,
-          published: true,
-          now: undefined,
-          delivery_date: undefined,
-          next_delivery_date: undefined,
-        }))
+      const data = await ordersApi.getOrdersIntakeStatus().catch(() => ({
+        cutoff_closed: false,
+        published: true,
+        now: undefined,
+        delivery_date: undefined,
+        next_delivery_date: undefined,
+      }))
       return {
         cutoffClosed: data.cutoff_closed,
         published: data.published,
@@ -94,12 +85,12 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
     async createOrder(outlet, temperature, cases, window) {
       await ordersApi.postOrders({
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           outlet_id: outlet,
           temperature_class: temperature === 'Chilled' ? 'CHILLED' : 'AMBIENT',
           cases,
           window_open: window,
-        }),
+        },
       })
     },
 
@@ -107,7 +98,7 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
       // An outlet has one dry and one chilled order per delivery day, so a type it already has is edited.
       const [intake, mine] = await Promise.all([
         deliveryDay(),
-        ordersApi.listOrders<ApiOrder[]>().catch(() => [] as ApiOrder[]),
+        ordersApi.listOrders().catch(() => [] as ApiOrder[]),
       ])
       const today = (order: ApiOrder) =>
         order.outlet_id === outlet &&
@@ -133,22 +124,22 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
         if (inp.orderId) {
           await ordersApi.patchOrders(inp.orderId, {
             method: 'PATCH',
-            body: JSON.stringify({
+            body: {
               total_cases: inp.cases,
               // Only a Tech store states a weight; for everyone else the server works it out.
               ...(inp.weightEntered ? { total_weight: inp.weight } : {}),
-            }),
+            },
           })
         } else {
           await ordersApi.postOrders({
             method: 'POST',
-            body: JSON.stringify({
+            body: {
               outlet_id: outlet,
               temperature_class: inp.temperature === 'Chilled' ? 'CHILLED' : 'AMBIENT',
               total_cases: inp.cases,
               // Only a Tech store states a weight; for everyone else the server works it out.
               ...(inp.weightEntered ? { total_weight: inp.weight } : {}),
-            }),
+            },
           })
         }
       }
@@ -157,7 +148,7 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
     async editOrder(orderId, cases) {
       await ordersApi.patchOrders(orderId, {
         method: 'PATCH',
-        body: JSON.stringify({ cases }),
+        body: { cases },
       })
     },
 
@@ -167,19 +158,19 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
     async confirmReceipt(orderId) {
       await ordersApi.confirmOrderReceipt(orderId, {
         method: 'POST',
-        body: JSON.stringify({ outcome: 'FULL' }),
+        body: { outcome: 'FULL' },
       })
     },
 
     async reportReceiptIssue(orderId, issue: ReceiptIssue) {
       await ordersApi.confirmOrderReceipt(orderId, {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           outcome: issue.kind === 'Missing' ? 'SHORT' : 'DAMAGED',
           received_qty: issue.received,
           affected_qty: issue.affected,
           notes: issue.description,
-        }),
+        },
       })
     },
 
@@ -187,10 +178,10 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
       // Record acknowledgement as a note
       await ordersApi.reportOrderIssue(orderId, {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           type: 'OTHER',
           description: 'Deferral acknowledged by store manager.',
-        }),
+        },
       })
     },
 
@@ -199,7 +190,7 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
       const scope = filter.outletId ?? outletId
       if (scope) params.set('outlet_id', scope)
       const [orders, intake] = await Promise.all([
-        ordersApi.getOrders<ApiOrder[]>(params.toString()).catch(() => [] as ApiOrder[]),
+        ordersApi.getOrders(params.toString()).catch(() => [] as ApiOrder[]),
         deliveryDay(),
       ])
       return orders
@@ -209,7 +200,7 @@ export function createHttpOrdersApi(outletId?: string): OrdersApi {
     },
 
     async getOutletProfile(id: string): Promise<OutletProfile> {
-      return profileFromReference(await referenceApi.getReferenceOutlet<ApiOutlet>(id))
+      return profileFromReference(await referenceApi.getReferenceOutlet(id))
     },
 
     async cancelOrder(orderId) {

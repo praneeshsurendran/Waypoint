@@ -1,0 +1,10 @@
+{
+  "name": "waypoint-contract-tools",
+  "private": true,
+  "type": "module",
+  "description": "Isolated OpenAPI generator toolchain; application compilation remains TypeScript 6.",
+  "dependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.2"
+  }
+}

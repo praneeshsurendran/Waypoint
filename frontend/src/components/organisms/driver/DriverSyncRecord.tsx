@@ -22,8 +22,8 @@ export function DriverSyncRecord({
   orders,
 }: {
   record: QueuedAction
-  stop?: Stop
-  evidence?: Evidence
+  stop?: Stop | undefined
+  evidence?: Evidence | undefined
   orders: Order[]
 }) {
   const apis = useApis(),

@@ -5,7 +5,7 @@ export function DriverPhotoPicker({
   busy,
   onPick,
 }: {
-  busy?: boolean
+  busy?: boolean | undefined
   onPick: (file: File) => Promise<void>
 }) {
   const camera = useRef<HTMLInputElement>(null)

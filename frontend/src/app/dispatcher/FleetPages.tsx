@@ -42,7 +42,7 @@ export function FleetPage({ tracking = false }: { tracking?: boolean }) {
       if (!vehicleOrders[order.vehicleId]) {
         vehicleOrders[order.vehicleId] = []
       }
-      vehicleOrders[order.vehicleId].push(order.id)
+      ;(vehicleOrders[order.vehicleId] ??= []).push(order.id)
     }
   })
 

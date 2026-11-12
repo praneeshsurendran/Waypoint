@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { WaypointDatabase } from '@/infrastructure/storage/database'
@@ -29,7 +30,7 @@ async function prepareTrip() {
   await service.updateSettings({ cutoffClosed: true })
   await service.reviewAllocation()
   await service.publish()
-  const load = (await repo.getSnapshot()).loads[0]
+  const load = required((await repo.getSnapshot()).loads[0])
   for (const item of load.items) await service.setLoaded(load.id, item.outlet, item.expected)
   for (const key of ['refrigeration', 'condition', 'restraints'] as const)
     await service.setCheck(load.id, key, true)
@@ -82,11 +83,11 @@ describe('shared demo workflows and persistence', () => {
     await service.reviewAllocation()
     await service.publish()
     await repo.update((snapshot) => {
-      snapshot.loads[0].released = true
+      required(snapshot.loads[0]).released = true
     })
     await expect(service.startRoute()).rejects.toThrow('safety checks')
     await repo.update((snapshot) => {
-      const load = snapshot.loads[0]
+      const load = required(snapshot.loads[0])
       load.completed = true
       load.photoId = 'loader-photo'
       load.checks = { refrigeration: true, condition: true, restraints: true }
@@ -201,7 +202,7 @@ describe('shared demo workflows and persistence', () => {
     })
     const reloaded = new DexieOperationsRepository(db)
     expect((await reloaded.getProofDraft('STOP001'))?.photo.size).toBeGreaterThan(0)
-    expect((await reloaded.getSnapshot()).stops[0].status).toBe('Arrived')
+    expect(required((await reloaded.getSnapshot()).stops[0]).status).toBe('Arrived')
     expect((await reloaded.getSnapshot()).queue).toHaveLength(0)
     await service.updateSettings({ routeRevision: 4 })
     expect((await reloaded.getProofDraft('STOP001'))?.revision).toBe(3)
@@ -215,7 +216,7 @@ describe('shared demo workflows and persistence', () => {
     await service.sync(true)
     const current = await repo.getSnapshot()
     expect(current.queue[0]).toMatchObject({ status: 'review', revision: 3 })
-    expect(current.stops[0].status).toBe('Proof pending')
+    expect(required(current.stops[0]).status).toBe('Proof pending')
   })
   it('replaces a captured draft with queued proof atomically and retains the draft on validation failure', async () => {
     await prepareTrip()
@@ -237,7 +238,7 @@ describe('shared demo workflows and persistence', () => {
     expect(await repo.getProofDraft('STOP001')).toBeDefined()
     await saveSignedProof('STOP001', photo(), 18, 'Nimal', '')
     expect(await repo.getProofDraft('STOP001')).toBeUndefined()
-    expect((await repo.getSnapshot()).queue[0].status).toBe('pending')
+    expect(required((await repo.getSnapshot()).queue[0]).status).toBe('pending')
   })
   it('rejects draft capture before parking and records a delay without cancelling delivery', async () => {
     const draft = {
@@ -276,11 +277,13 @@ describe('shared demo workflows and persistence', () => {
     }
     const retryService = new OperationsService(repo, controlledGateway)
     const upload = retryService.sync(true)
-    await expect.poll(async () => (await repo.getSnapshot()).queue[0].status).toBe('syncing')
-    expect((await repo.getSnapshot()).stops[0].status).toBe('Proof pending')
+    await expect
+      .poll(async () => required((await repo.getSnapshot()).queue[0]).status)
+      .toBe('syncing')
+    expect(required((await repo.getSnapshot()).stops[0]).status).toBe('Proof pending')
     finishUpload()
     await upload
-    expect((await repo.getSnapshot()).stops[0].status).toBe('Delivered')
+    expect(required((await repo.getSnapshot()).stops[0]).status).toBe('Delivered')
   })
   it('automatic sync of a new pending stop does not retry an older failed proof', async () => {
     await prepareTrip()
@@ -357,7 +360,7 @@ describe('shared demo workflows and persistence', () => {
       role: 'loader',
       accessState: 'Recovery requested',
     })
-    expect(reloaded.audit[0].actor).toBe('Administrator')
+    expect(required(reloaded.audit[0]).actor).toBe('Administrator')
   })
   it('confirms both store records atomically and preserves them after reload', async () => {
     const inputs = [
@@ -365,7 +368,7 @@ describe('shared demo workflows and persistence', () => {
       { temperature: 'Ambient' as const, cases: 24, weight: 240, volume: 2.4, window: '06:00' },
     ]
     await expect(
-      service.confirmStoreOrders([inputs[0], { ...inputs[1], cases: 0 }]),
+      service.confirmStoreOrders([required(inputs[0]), { ...required(inputs[1]), cases: 0 }]),
     ).rejects.toThrow('between 1 and 100')
     expect((await repo.getSnapshot()).orders.find((order) => order.id === 'ORD1042')?.cases).toBe(
       18,
@@ -395,7 +398,7 @@ describe('shared demo workflows and persistence', () => {
       s.stops.some((stop) => stop.loadId === 'LOAD055-1' && stop.orderIds.includes('ORD1042')),
     ).toBe(false)
     expect(s.stops.find((stop) => stop.orderIds.includes('ORD1042'))?.loadId).toBe('LOAD001-2')
-    expect(s.loads[0].items.reduce((n, item) => n + item.expected, 0)).toBe(14)
+    expect(required(s.loads[0]).items.reduce((n, item) => n + item.expected, 0)).toBe(14)
   })
   it('proposes all 24 valid allocations and enforces gated handoff', async () => {
     await expect(service.release('LOAD055-1')).rejects.toThrow('Publish')
@@ -410,7 +413,7 @@ describe('shared demo workflows and persistence', () => {
     await expect(service.completeLoading('LOAD055-1')).rejects.toThrow('Reconcile')
     await prepareTripAfterPublication()
     s = await repo.getSnapshot()
-    expect(s.loads[0].released).toBe(true)
+    expect(required(s.loads[0]).released).toBe(true)
     expect(s.vehicles.find((v) => v.id === 'VEH055')?.status).toBe('En route')
   })
   it('retains proof through reload and failed sync, then records the signed store receipt', async () => {
@@ -419,19 +422,19 @@ describe('shared demo workflows and persistence', () => {
     await saveSignedProof('STOP001', photo(), 18, 'Thilini', '', signature)
     const reloaded = new DexieOperationsRepository(db)
     let s = await reloaded.getSnapshot()
-    expect(s.stops[0].status).toBe('Proof pending')
-    const saved = await reloaded.getEvidence(s.queue[0].evidenceId)
+    expect(required(s.stops[0]).status).toBe('Proof pending')
+    const saved = await reloaded.getEvidence(required(s.queue[0]).evidenceId)
     expect(saved?.photo.size).toBeGreaterThan(0)
     expect(saved?.signature?.size).toBe(signature.size)
     await service.updateSettings({ syncOutcome: 'retry' })
     await service.sync(true)
     s = await repo.getSnapshot()
-    expect(s.queue[0].status).toBe('retry')
-    expect(s.stops[0].status).toBe('Proof pending')
+    expect(required(s.queue[0]).status).toBe('retry')
+    expect(required(s.stops[0]).status).toBe('Proof pending')
     await service.updateSettings({ syncOutcome: 'accepted' })
     await service.sync(true)
     s = await repo.getSnapshot()
-    expect(s.queue[0].status).toBe('accepted')
+    expect(required(s.queue[0]).status).toBe('accepted')
     expect(s.orders.find((o) => o.id === 'ORD1042')).toMatchObject({
       status: 'Delivered',
       receipt: 'Confirmed',
@@ -448,14 +451,14 @@ describe('shared demo workflows and persistence', () => {
     await service.updateSettings({ routeRevision: 4 })
     await service.sync(true)
     let s = await repo.getSnapshot()
-    expect(s.queue[0].status).toBe('review')
-    const evidence = await repo.getEvidence(s.queue[0].evidenceId)
+    expect(required(s.queue[0]).status).toBe('review')
+    const evidence = await repo.getEvidence(required(s.queue[0]).evidenceId)
     expect(evidence?.revision).toBe(3)
-    await service.reviewQueuedRecord(s.queue[0].id)
+    await service.reviewQueuedRecord(required(s.queue[0]).id)
     await service.sync(true)
     s = await repo.getSnapshot()
-    expect(s.queue[0].status).toBe('accepted')
-    expect((await repo.getEvidence(s.queue[0].evidenceId))?.revision).toBe(3)
+    expect(required(s.queue[0]).status).toBe('accepted')
+    expect((await repo.getEvidence(required(s.queue[0]).evidenceId))?.revision).toBe(3)
   })
   it('keeps the entire record when offline and rejects duplicate proof', async () => {
     await prepareTrip()
@@ -489,7 +492,7 @@ describe('shared demo workflows and persistence', () => {
     await service.updateSettings({ cutoffClosed: true })
     await service.reviewAllocation()
     await service.publish()
-    const load = (await repo.getSnapshot()).loads[0]
+    const load = required((await repo.getSnapshot()).loads[0])
     for (const item of load.items)
       await service.setLoaded(load.id, item.outlet, item.expected, load.revision)
     for (const key of ['refrigeration', 'condition', 'restraints'] as const)
@@ -506,15 +509,15 @@ describe('shared demo workflows and persistence', () => {
       /changed/,
     )
     expect(await repo.getEvidence(evidenceId)).toBeUndefined()
-    expect((await repo.getSnapshot()).loads[0].photoId).toBeUndefined()
+    expect(required((await repo.getSnapshot()).loads[0]).photoId).toBeUndefined()
   })
   it('does not mark a failed delivery attempt as delivered after sync', async () => {
     await prepareTrip()
     await service.saveAttemptProof('STOP001', photo(), 'Outlet closed at the receiving dock')
     await service.sync(true)
     const s = await repo.getSnapshot()
-    expect(s.stops[0].status).toBe('Cannot deliver')
-    expect(s.orders[0].status).not.toBe('Delivered')
+    expect(required(s.stops[0]).status).toBe('Cannot deliver')
+    expect(required(s.orders[0]).status).not.toBe('Delivered')
   })
   it('rejects unsigned completion and mismatched photo or order manifests without losing the draft', async () => {
     await prepareTrip()
@@ -586,18 +589,18 @@ describe('shared demo workflows and persistence', () => {
       attempts: 1,
     }
     await repo.saveEvidence(evidence, record, (snapshot) => {
-      snapshot.stops[0].status = 'Delivered'
-      snapshot.stops[0].proofId = evidence.id
+      required(snapshot.stops[0]).status = 'Delivered'
+      required(snapshot.stops[0]).proofId = evidence.id
     })
     await service.reopenProofForSignOff(record.id)
     const reloaded = new DexieOperationsRepository(db)
-    expect((await reloaded.getSnapshot()).queue[0].status).toBe('superseded')
-    expect((await reloaded.getSnapshot()).stops[0].status).toBe('Arrived')
+    expect(required((await reloaded.getSnapshot()).queue[0]).status).toBe('superseded')
+    expect(required((await reloaded.getSnapshot()).stops[0]).status).toBe('Arrived')
     expect((await reloaded.getProofDraft('STOP001'))?.photo.size).toBe(evidence.photo.size)
     expect(await reloaded.getEvidence(evidence.id)).toBeDefined()
     await saveSignedProof('STOP001', photo(), 18, 'Nimal', '')
     await service.sync(true)
-    expect((await reloaded.getSnapshot()).stops[0].status).toBe('Delivered')
+    expect(required((await reloaded.getSnapshot()).stops[0]).status).toBe('Delivered')
     expect((await reloaded.getSnapshot()).queue).toHaveLength(2)
   })
   it('records a signed quantity shortfall as a store issue after acceptance', async () => {
@@ -610,10 +613,10 @@ describe('shared demo workflows and persistence', () => {
   it('requires a new manager signature when a revised manifest changes unloaded quantities', async () => {
     await prepareTrip()
     await saveSignedProof('STOP001', photo(), 18, 'Nimal', '')
-    const original = (await repo.getSnapshot()).queue[0]
+    const original = required((await repo.getSnapshot()).queue[0])
     await repo.update((snapshot) => {
       snapshot.orders.find((order) => order.id === 'ORD1042')!.cases = 20
-      snapshot.stops[0].cases = 20
+      required(snapshot.stops[0]).cases = 20
       snapshot.settings.routeRevision = 4
     })
     await service.sync(true)
@@ -623,17 +626,18 @@ describe('shared demo workflows and persistence', () => {
     })
     await service.reviewQueuedRecord(original.id)
     await service.sync(true)
-    expect((await repo.getSnapshot()).stops[0].status).toBe('Proof pending')
+    expect(required((await repo.getSnapshot()).stops[0]).status).toBe('Proof pending')
     await service.reopenProofForSignOff(original.id)
     await saveSignedProof('STOP001', photo(), 20, 'Nimal', '')
     await service.sync(true)
-    expect((await repo.getSnapshot()).stops[0].status).toBe('Delivered')
+    expect(required((await repo.getSnapshot()).stops[0]).status).toBe('Delivered')
     expect((await repo.getSnapshot()).queue.find((item) => item.id === original.id)?.status).toBe(
       'superseded',
     )
-    expect((await repo.getEvidence(original.evidenceId))?.managerSignOff?.orders[0].received).toBe(
-      18,
-    )
+    expect(
+      required(required(await repo.getEvidence(original.evidenceId))?.managerSignOff)?.orders[0]
+        ?.received,
+    ).toBe(18)
   })
   it('blocks fresh receiving times after 08:00 in order intake', async () => {
     await expect(service.createOrder('Chilled', 10, '08:30')).rejects.toThrow('before 08:00')
@@ -662,7 +666,7 @@ describe('shared demo workflows and persistence', () => {
   })
 })
 async function prepareTripAfterPublication() {
-  const load = (await repo.getSnapshot()).loads[0]
+  const load = required((await repo.getSnapshot()).loads[0])
   for (const item of load.items) await service.setLoaded(load.id, item.outlet, item.expected)
   for (const key of ['refrigeration', 'condition', 'restraints'] as const)
     await service.setCheck(load.id, key, true)

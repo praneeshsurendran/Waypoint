@@ -1,17 +1,26 @@
 """Driver router — current trip, stop events, offline sync, photo upload."""
 
 from __future__ import annotations
+
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.plan import DeliveryEventIn, DeliveryEventResult, SyncBatch, TripOut
+from waypoint_contracts.position import PositionIn, PositionOut
+from waypoint_contracts.runtime import (
+    DeviceResult,
+    OkResult,
+    StatusResult,
+    UploadResult,
+)
+
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from app.infrastructure.db.models.position import VehiclePosition
-from waypoint_contracts.position import PositionIn
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.infrastructure.db.models.order import Order
 from app.infrastructure.db.models.plan import Stop, StopOrder, Trip
-from waypoint_contracts.plan import DeliveryEventIn, DeliveryEventResult, SyncBatch
 from app.services.audit import log_action
 from app.services.state_machine import transition_order, transition_trip
 
@@ -20,7 +29,7 @@ _DRIVER = None
 _UPLOAD_ROLES = None
 
 
-def current_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
+def current_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER) -> Optional[TripOut]:
     """Return the driver's active trip (LOADING, LOADED, or IN_TRANSIT)."""
     q = (
         db.query(Trip)
@@ -35,11 +44,11 @@ def current_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
         .filter(Trip.status.in_(["LOADING", "LOADED", "IN_TRANSIT"]))
     )
     if current_user.role == "DRIVER" and (not current_user.vehicle_id):
-        return None
+        return TypeAdapter(Optional[TripOut]).validate_python(None)
     if current_user.vehicle_id:
         q = q.filter(Trip.vehicle_id == current_user.vehicle_id)
     trip = q.order_by(Trip.planned_depart).first()
-    return trip
+    return TypeAdapter(Optional[TripOut]).validate_python(trip)
 
 
 def _orders_in_transit(db: DbDep, trip: Trip, user_id: Optional[int] = None) -> None:
@@ -62,7 +71,7 @@ def _orders_in_transit(db: DbDep, trip: Trip, user_id: Optional[int] = None) -> 
             transition_order(order, "IN_TRANSIT")
 
 
-def start_driver_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
+def start_driver_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER) -> StatusResult:
     """Mark the driver's current trip as IN_TRANSIT (LOADED -> IN_TRANSIT)."""
     q = db.query(Trip).options(selectinload(Trip.stops)).filter(Trip.status == "LOADED")
     if current_user.vehicle_id:
@@ -77,7 +86,7 @@ def start_driver_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
         if current_user.vehicle_id:
             trip_in_transit = trip_in_transit.filter(Trip.vehicle_id == current_user.vehicle_id)
         if trip_in_transit.first():
-            return {"ok": True, "status": "IN_TRANSIT"}
+            return TypeAdapter(StatusResult).validate_python({"ok": True, "status": "IN_TRANSIT"})
         raise HTTPException(
             status_code=400,
             detail={"code": "NO_LOADED_TRIP", "message": "No loaded trip ready for departure."},
@@ -85,12 +94,12 @@ def start_driver_trip(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
     transition_trip(trip, "IN_TRANSIT")
     _orders_in_transit(db, trip, current_user.id)
     db.commit()
-    return {"ok": True, "status": trip.status}
+    return TypeAdapter(StatusResult).validate_python({"ok": True, "status": trip.status})
 
 
 def record_stop_event(
     stop_id: int, body: DeliveryEventIn, db: DbDep, current_user: CurrentUser, _: None = _DRIVER
-):
+) -> DeviceResult:
     from app.application.use_cases.delivery import apply_event
 
     stop = db.get(Stop, stop_id)
@@ -98,10 +107,12 @@ def record_stop_event(
         raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Stop not found."})
     result = apply_event(db, stop, body, current_user)
     db.commit()
-    return result
+    return TypeAdapter(DeviceResult).validate_python(result)
 
 
-def sync_events(body: SyncBatch, db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
+def sync_events(
+    body: SyncBatch, db: DbDep, current_user: CurrentUser, _: None = _DRIVER
+) -> list[DeliveryEventResult]:
     from app.application.use_cases.delivery import apply_event
 
     results = []
@@ -130,7 +141,11 @@ def sync_events(body: SyncBatch, db: DbDep, current_user: CurrentUser, _: None =
                 DeliveryEventResult(
                     client_op_id=item.client_op_id,
                     accepted=False,
-                    message=exc.detail["code"].lower(),
+                    message=(
+                        str(exc.detail.get("code", "sync_conflict"))
+                        if isinstance(exc.detail, dict)
+                        else str(exc.detail)
+                    ).lower(),
                 )
             )
         except IntegrityError:
@@ -140,7 +155,7 @@ def sync_events(body: SyncBatch, db: DbDep, current_user: CurrentUser, _: None =
                 )
             )
     db.commit()
-    return results
+    return TypeAdapter(list[DeliveryEventResult]).validate_python(results)
 
 
 def upload_pod(
@@ -149,13 +164,15 @@ def upload_pod(
     current_user: CurrentUser,
     stop_id: Optional[str] = None,
     _: None = _UPLOAD_ROLES,
-):
+) -> UploadResult:
     from app.application.use_cases.proofs import upload
 
-    return upload(db, current_user, file, stop_id)
+    return TypeAdapter(UploadResult).validate_python(upload(db, current_user, file, stop_id))
 
 
-def record_position(body: PositionIn, db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
+def record_position(
+    body: PositionIn, db: DbDep, current_user: CurrentUser, _: None = _DRIVER
+) -> OkResult:
     """Store one GPS fix from the driver's device for the vehicle they are assigned to."""
     if current_user.role == "DRIVER" and (
         not current_user.vehicle_id or body.vehicle_id != current_user.vehicle_id
@@ -180,19 +197,19 @@ def record_position(body: PositionIn, db: DbDep, current_user: CurrentUser, _: N
         )
     )
     db.commit()
-    return {"ok": True}
+    return TypeAdapter(OkResult).validate_python({"ok": True})
 
 
-def latest_positions(db: DbDep, current_user: CurrentUser, _: None = _DRIVER):
+def latest_positions(db: DbDep, current_user: CurrentUser, _: None = _DRIVER) -> list[PositionOut]:
     """The most recent fix for each vehicle that has reported one."""
     query = db.query(VehiclePosition)
     if current_user.role == "DRIVER":
         if not current_user.vehicle_id:
-            return []
+            return TypeAdapter(list[PositionOut]).validate_python([])
         query = query.filter(VehiclePosition.vehicle_id == current_user.vehicle_id)
     rows = (
         query.distinct(VehiclePosition.vehicle_id)
         .order_by(VehiclePosition.vehicle_id, VehiclePosition.recorded_at.desc())
         .all()
     )
-    return rows
+    return TypeAdapter(list[PositionOut]).validate_python(rows)

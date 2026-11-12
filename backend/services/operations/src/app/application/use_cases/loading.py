@@ -1,17 +1,21 @@
 """Loading router — loader views trips and flags/releases them."""
 
 from __future__ import annotations
-import datetime as dt
+
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.plan import LoadFlagIn, TripOut
+from waypoint_contracts.runtime import StatusResult, OkResult
+
+import datetime as dt
 from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.infrastructure.db.models.loading import LoadCheck
 from app.infrastructure.db.models.order import Order
 from app.infrastructure.db.models.plan import Plan, Stop, StopOrder, Trip
 from app.infrastructure.db.models.reference import Vehicle
-from waypoint_contracts.plan import LoadFlagIn
 from app.services.audit import log_action
 from app.services.state_machine import transition_trip
 
@@ -26,7 +30,7 @@ def list_loading_trips(
     _: None = _READ_ROLES,
     date: Optional[dt.date] = None,
     depot: Optional[str] = None,
-):
+) -> list[TripOut]:
     q = (
         db.query(Trip)
         .join(Plan, Trip.plan_id == Plan.id)
@@ -38,9 +42,9 @@ def list_loading_trips(
         if current_user.vehicle_id:
             q = q.filter(Trip.vehicle_id == current_user.vehicle_id)
         else:
-            return []
+            return TypeAdapter(list[TripOut]).validate_python([])
     elif current_user.role == "LOADER" and (not current_user.depot_id):
-        return []
+        return TypeAdapter(list[TripOut]).validate_python([])
     elif current_user.role == "LOADER" and current_user.depot_id:
         q = q.join(Vehicle, Trip.vehicle_id == Vehicle.vehicle_id).filter(
             Vehicle.depot_code == current_user.depot_id
@@ -49,10 +53,12 @@ def list_loading_trips(
         q = q.join(Vehicle, Trip.vehicle_id == Vehicle.vehicle_id).filter(
             Vehicle.depot_code == depot
         )
-    return q.order_by(Trip.planned_depart).all()
+    return TypeAdapter(list[TripOut]).validate_python(q.order_by(Trip.planned_depart).all())
 
 
-def get_loading_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _READ_ROLES):
+def get_loading_trip(
+    trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _READ_ROLES
+) -> TripOut:
     trip = db.get(Trip, trip_id, options=[selectinload(Trip.stops), selectinload(Trip.load_checks)])
     if not trip:
         raise HTTPException(
@@ -62,12 +68,12 @@ def get_loading_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: None
 
     authorize_trip(db, trip, current_user)
     trip.stops.sort(key=lambda s: s.sequence, reverse=True)
-    return trip
+    return TypeAdapter(TripOut).validate_python(trip)
 
 
 def flag_load(
     trip_id: int, body: LoadFlagIn, db: DbDep, current_user: CurrentUser, _: None = _LOADER
-):
+) -> OkResult:
     trip = db.get(Trip, trip_id)
     if not trip:
         raise HTTPException(
@@ -113,10 +119,12 @@ def flag_load(
         after={"status": body.status, "order_id": body.order_id, "photo_path": body.photo_path},
     )
     db.commit()
-    return {"ok": True}
+    return TypeAdapter(OkResult).validate_python({"ok": True})
 
 
-def start_loading_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _LOADER):
+def start_loading_trip(
+    trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _LOADER
+) -> StatusResult:
     """Mark that vehicle loading has physically started at the bay (PLANNED -> LOADING)."""
     trip = db.get(Trip, trip_id)
     if not trip:
@@ -138,10 +146,12 @@ def start_loading_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: No
         after={"status": trip.status},
     )
     db.commit()
-    return {"ok": True, "status": trip.status}
+    return TypeAdapter(StatusResult).validate_python({"ok": True, "status": trip.status})
 
 
-def release_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _LOADER):
+def release_trip(
+    trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _LOADER
+) -> StatusResult:
     """Release vehicle after loading is complete (PLANNED/LOADING -> LOADED)."""
     trip = db.get(Trip, trip_id, options=[selectinload(Trip.stops)])
     if not trip:
@@ -178,4 +188,4 @@ def release_trip(trip_id: int, db: DbDep, current_user: CurrentUser, _: None = _
         after={"status": trip.status},
     )
     db.commit()
-    return {"ok": True, "status": trip.status}
+    return TypeAdapter(StatusResult).validate_python({"ok": True, "status": trip.status})

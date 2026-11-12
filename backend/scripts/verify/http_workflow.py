@@ -17,7 +17,14 @@ def main():
     with httpx.Client(base_url=base, timeout=120) as client:
 
         def request(method, path, headers=None, expected=200, **kwargs):
-            result = client.request(method, path, headers=headers, **kwargs)
+            for attempt in range(4):
+                result = client.request(method, path, headers=headers, **kwargs)
+                if result.status_code != 429 or expected == 429 or attempt == 3:
+                    break
+                # Throttled requests were rejected before business processing. Respect the
+                # budget during repeated benchmarks rather than weakening the service limit.
+                delay = result.headers.get("Retry-After", "1")
+                time.sleep(min(60, max(1, int(delay))) if delay.isdigit() else 1)
             if result.status_code != expected:
                 raise AssertionError(
                     f"{method} {path}: {result.status_code} {result.text}"

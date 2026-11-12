@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from fastapi.params import Depends as Dependency
+
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from waypoint_security import Actor
 from app.core.security import decode_access_token
 from app.infrastructure.db.session import get_db
 from app.infrastructure.db.models.user import User
@@ -21,7 +24,8 @@ DbDep = Annotated[Session, Depends(get_db)]
 def _get_current_user(
     db: DbDep,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
-) -> User:
+    request: Request,
+) -> Actor:
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,6 +46,9 @@ def _get_current_user(
             if hasattr(User, key):
                 setattr(user, key, value)
         db.flush()
+        from waypoint_runtime.rate_limit import enforce_user
+
+        enforce_user(request, user.id)
         return user
     try:
         payload = decode_access_token(credentials.credentials)
@@ -57,16 +64,19 @@ def _get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "USER_NOT_FOUND", "message": "User not found or deactivated."},
         )
+    from waypoint_runtime.rate_limit import enforce_user
+
+    enforce_user(request, user.id)
     return user
 
 
-CurrentUser = Annotated[User, Depends(_get_current_user)]
+CurrentUser = Annotated[Actor, Depends(_get_current_user)]
 
 
-def require_role(*roles: str):
+def require_role(*roles: str) -> Dependency:
     """Return a dependency that enforces the user has one of the given roles."""
 
-    def _check(current_user: CurrentUser) -> User:
+    def _check(current_user: CurrentUser) -> Actor:
         if current_user.role not in roles and not (
             current_user.role == "ADMIN" and "DISPATCHER" in roles
         ):

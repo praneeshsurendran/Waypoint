@@ -1,13 +1,25 @@
 """Orders router — store managers place orders; dispatchers manage them."""
 
 from __future__ import annotations
-import datetime as dt
+
+from pydantic import TypeAdapter
 from typing import Optional
+from waypoint_contracts.order import IssueCreate, OrderCreate, OrderOut, OrderUpdate, ReceiptCreate
+from waypoint_contracts.plan import StopOut
+from waypoint_contracts.runtime import (
+    ClosureResult,
+    IntakeStatus,
+    OkResult,
+    ReceiptResult,
+    StatusResult,
+)
+
+import datetime as dt
 from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.core import clock
 from app.infrastructure.db.models.audit import AuditLog
 from app.infrastructure.db.models.deferral import Deferral
@@ -16,7 +28,6 @@ from app.infrastructure.db.models.order import Order, OrderLine
 from app.infrastructure.db.models.plan import Plan, Stop, StopOrder, Trip
 from app.infrastructure.db.models.receipt import Receipt
 from app.infrastructure.db.models.reference import CalendarDay, Outlet
-from waypoint_contracts.order import IssueCreate, OrderCreate, OrderUpdate, ReceiptCreate
 from app.services.audit import log_action
 from app.services.calendar import previous_operating_day
 from app.services.order_sizing import MAX_UNITS, TECH_ITEM_KG, estimate_load
@@ -63,7 +74,7 @@ def _intake_closed(db: Session, delivery_date: dt.date) -> bool:
     )
 
 
-def _next_operating_day(db, after):
+def _next_operating_day(db: Session, after: dt.date) -> dt.date:
     from app.services.calendar import next_operating_day
 
     return next_operating_day(db, after)
@@ -89,8 +100,8 @@ def _annotate_departures(db: Session, orders: list[Order]) -> list[Order]:
                 trip_of[order.id] = str(so.stop_rel.trip_rel.id)
                 break
     if trip_of:
-        left = dict(
-            db.query(AuditLog.entity_id, func.min(AuditLog.created_at))
+        departure_rows = (
+            db.query(AuditLog.entity_id, func.min(AuditLog.created_at).label("departed_at"))
             .filter(
                 AuditLog.action == "START_TRIP",
                 AuditLog.entity_type == "Trip",
@@ -99,6 +110,7 @@ def _annotate_departures(db: Session, orders: list[Order]) -> list[Order]:
             .group_by(AuditLog.entity_id)
             .all()
         )
+        left: dict[str, dt.datetime] = {row.entity_id: row.departed_at for row in departure_rows}
         for order in orders:
             order.departed_at = left.get(trip_of.get(order.id, ""))
     return orders
@@ -144,7 +156,7 @@ def create_order(
     db: DbDep,
     current_user: CurrentUser,
     _: None = None,
-):
+) -> OrderOut:
     if current_user.role == "STORE_MANAGER" and body.outlet_id != current_user.outlet_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -167,7 +179,7 @@ def create_order(
     delivery_date = body.delivery_date or _order_day(db)
     lock_run(db, delivery_date)
     earliest = _order_day(db)
-    if delivery_date < earliest or db.get(IntakeClosure, delivery_date):
+    if delivery_date < earliest or db.get(IntakeClosure, delivery_date) is not None:
         raise HTTPException(
             409,
             detail={
@@ -265,7 +277,7 @@ def create_order(
     )
     db.commit()
     db.refresh(order)
-    return order
+    return TypeAdapter(OrderOut).validate_python(order)
 
 
 def list_order_stops(
@@ -273,7 +285,7 @@ def list_order_stops(
     current_user: CurrentUser,
     outlet_id: Optional[str] = None,
     date: Optional[dt.date] = None,
-):
+) -> list[StopOut]:
     """Returns delivery stops for the store manager's outlet (or scoped by query param for dispatchers)."""
     target_outlet = (
         current_user.outlet_id
@@ -294,11 +306,11 @@ def list_order_stops(
     )
     if current_user.role == "DRIVER":
         if not current_user.vehicle_id:
-            return []
+            return TypeAdapter(list[StopOut]).validate_python([])
         q = q.filter(Trip.vehicle_id == current_user.vehicle_id, Plan.status == "PUBLISHED")
     if current_user.role == "LOADER":
         if not current_user.depot_id:
-            return []
+            return TypeAdapter(list[StopOut]).validate_python([])
         from app.infrastructure.db.models.reference import Vehicle
 
         q = q.join(Vehicle, Trip.vehicle_id == Vehicle.vehicle_id).filter(
@@ -332,10 +344,10 @@ def list_order_stops(
         if store_view:
             earlier = earlier.filter(Plan.status == "PUBLISHED")
         stops = earlier.order_by(Stop.id.desc()).limit(10).all()
-    return stops
+    return TypeAdapter(list[StopOut]).validate_python(stops)
 
 
-def get_intake_status(db: DbDep, current_user: CurrentUser):
+def get_intake_status(db: DbDep, current_user: CurrentUser) -> IntakeStatus:
     """Return whether cutoff is passed and whether a plan has been published for tomorrow's delivery."""
     delivery_date = clock.delivery_date()
     published_plan = (
@@ -343,13 +355,15 @@ def get_intake_status(db: DbDep, current_user: CurrentUser):
         .filter(Plan.delivery_date == delivery_date, Plan.status == "PUBLISHED")
         .first()
     )
-    return {
-        "cutoff_closed": _intake_closed(db, delivery_date),
-        "published": published_plan is not None,
-        "delivery_date": str(delivery_date),
-        "next_delivery_date": str(_order_day(db)),
-        "now": clock.now().isoformat(),
-    }
+    return TypeAdapter(IntakeStatus).validate_python(
+        {
+            "cutoff_closed": _intake_closed(db, delivery_date),
+            "published": published_plan is not None,
+            "delivery_date": str(delivery_date),
+            "next_delivery_date": str(_order_day(db)),
+            "now": clock.now().isoformat(),
+        }
+    )
 
 
 def close_intake(
@@ -357,8 +371,8 @@ def close_intake(
     current_user: CurrentUser,
     _: None = None,
     date: Optional[dt.date] = None,
-    commit=True,
-):
+    commit: bool = True,
+) -> ClosureResult:
     target_date = date or clock.delivery_date()
     from app.application.use_cases.locking import lock_run
     from app.infrastructure.messaging.models import IntakeClosure
@@ -367,7 +381,9 @@ def close_intake(
     lock_run(db, target_date)
     existing = db.get(IntakeClosure, target_date)
     if existing:
-        return {"closed": 0, "delivery_date": str(target_date)}
+        return TypeAdapter(ClosureResult).validate_python(
+            {"closed": 0, "delivery_date": str(target_date)}
+        )
     orders = (
         db.query(Order)
         .filter(Order.delivery_date == target_date, Order.status.in_(["PLACED", "CONFIRMED"]))
@@ -419,7 +435,9 @@ def close_intake(
         db.commit()
     else:
         db.flush()
-    return {"closed": len(orders), "delivery_date": str(target_date)}
+    return TypeAdapter(ClosureResult).validate_python(
+        {"closed": len(orders), "delivery_date": str(target_date)}
+    )
 
 
 def list_orders(
@@ -430,7 +448,7 @@ def list_orders(
     outlet_id: Optional[str] = None,
     limit: int = 500,
     offset: int = 0,
-):
+) -> list[OrderOut]:
     q = db.query(Order).options(
         selectinload(Order.lines),
         selectinload(Order.outlet_rel),
@@ -453,12 +471,15 @@ def list_orders(
         q = q.filter(Order.delivery_date == date)
     if status_filter:
         q = q.filter(Order.status == status_filter)
-    return _annotate_departures(
-        db, q.order_by(Order.placed_at.desc(), Order.id.desc()).offset(offset).limit(limit).all()
+    return TypeAdapter(list[OrderOut]).validate_python(
+        _annotate_departures(
+            db,
+            q.order_by(Order.placed_at.desc(), Order.id.desc()).offset(offset).limit(limit).all(),
+        )
     )
 
 
-def get_order(order_id: int, db: DbDep, current_user: CurrentUser):
+def get_order(order_id: int, db: DbDep, current_user: CurrentUser) -> OrderOut:
     order = db.get(
         Order,
         order_id,
@@ -486,7 +507,7 @@ def get_order(order_id: int, db: DbDep, current_user: CurrentUser):
 
     require_order(db, order, current_user)
     _annotate_departures(db, [order])
-    return order
+    return TypeAdapter(OrderOut).validate_python(order)
 
 
 def update_order(
@@ -495,7 +516,7 @@ def update_order(
     db: DbDep,
     current_user: CurrentUser,
     _: None = None,
-):
+) -> OrderOut:
     order = db.get(
         Order,
         order_id,
@@ -545,7 +566,10 @@ def update_order(
     from app.infrastructure.messaging.models import IntakeClosure
 
     lock_run(db, order.delivery_date)
-    if current_user.role == "STORE_MANAGER" and db.get(IntakeClosure, order.delivery_date):
+    if (
+        current_user.role == "STORE_MANAGER"
+        and db.get(IntakeClosure, order.delivery_date) is not None
+    ):
         raise HTTPException(
             409,
             detail={
@@ -584,7 +608,7 @@ def update_order(
     )
     db.commit()
     db.refresh(order)
-    return order
+    return TypeAdapter(OrderOut).validate_python(order)
 
 
 def cancel_order(
@@ -592,7 +616,7 @@ def cancel_order(
     db: DbDep,
     current_user: CurrentUser,
     _: None = None,
-):
+) -> OrderOut:
     order = db.get(
         Order,
         order_id,
@@ -639,10 +663,12 @@ def cancel_order(
     )
     db.commit()
     db.refresh(order)
-    return order
+    return TypeAdapter(OrderOut).validate_python(order)
 
 
-def confirm_order(order_id: int, db: DbDep, current_user: CurrentUser, _: None = None):
+def confirm_order(
+    order_id: int, db: DbDep, current_user: CurrentUser, _: None = None
+) -> StatusResult:
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(
@@ -660,7 +686,7 @@ def confirm_order(order_id: int, db: DbDep, current_user: CurrentUser, _: None =
         after={"status": order.status},
     )
     db.commit()
-    return {"ok": True, "status": order.status}
+    return TypeAdapter(StatusResult).validate_python({"ok": True, "status": order.status})
 
 
 def confirm_receipt(
@@ -669,7 +695,7 @@ def confirm_receipt(
     db: DbDep,
     current_user: CurrentUser,
     _: None = None,
-):
+) -> ReceiptResult:
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(
@@ -717,7 +743,9 @@ def confirm_receipt(
         .first()
     )
     if existing_receipt:
-        return {"ok": True, "receipt_status": existing_receipt.status, "idempotent": True}
+        return TypeAdapter(ReceiptResult).validate_python(
+            {"ok": True, "receipt_status": existing_receipt.status, "idempotent": True}
+        )
     received = body.received_qty if body.received_qty is not None else order.total_cases
     affected = body.affected_qty or 0
     if not 0 <= received <= order.total_cases or not 0 <= affected <= order.total_cases:
@@ -783,7 +811,9 @@ def confirm_receipt(
         after={"receipt_status": receipt_status, "outcome": outcome},
     )
     db.commit()
-    return {"ok": True, "receipt_status": receipt_status}
+    return TypeAdapter(ReceiptResult).validate_python(
+        {"ok": True, "receipt_status": receipt_status}
+    )
 
 
 def report_issue(
@@ -792,7 +822,7 @@ def report_issue(
     db: DbDep,
     current_user: CurrentUser,
     _: None = None,
-):
+) -> OkResult:
     order = db.get(Order, order_id)
     if not order:
         raise HTTPException(
@@ -815,4 +845,4 @@ def report_issue(
         after={"type": body.type},
     )
     db.commit()
-    return {"ok": True}
+    return TypeAdapter(OkResult).validate_python({"ok": True})

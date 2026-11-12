@@ -1,76 +1,91 @@
-import { request } from '@/api/client/apiClient'
+/** Backend OpenAPI owns these contracts; responses are validated before returning. */
+import { contractRequest } from '@/api/client/contractClient'
+import type { ApiResponse, ApiQuery, ApiOptions as ContractOptions } from '@/types/api/contracts'
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function getOutletStops<T = unknown>(
-  outletId: string | number,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/orders/stops?outlet_id=${outletId}`, options)
+export function getOutletStops(
+  outletId: string,
+  options?: ContractOptions<'/orders/stops', 'get'>,
+): Promise<ApiResponse<'/orders/stops', 'get'>> {
+  return contractRequest('/orders/stops', 'get', { ...options, query: { outlet_id: outletId } })
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function getOrdersStops<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/orders/stops', options)
+export function getOrdersStops(
+  options?: ContractOptions<'/orders/stops', 'get'>,
+): Promise<ApiResponse<'/orders/stops', 'get'>> {
+  return contractRequest('/orders/stops', 'get', options ?? {})
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function getOrdersIntakeStatus<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/orders/intake-status', options)
+export function getOrdersIntakeStatus(
+  options?: ContractOptions<'/orders/intake-status', 'get'>,
+): Promise<ApiResponse<'/orders/intake-status', 'get'>> {
+  return contractRequest('/orders/intake-status', 'get', options ?? {})
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function getOrders<T = unknown>(
-  query: string | number | URLSearchParams,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/orders?${query}`, options)
+export function getOrders(
+  query: ApiQuery<'/orders', 'get'> | URLSearchParams | string,
+  options?: ContractOptions<'/orders', 'get'>,
+): Promise<ApiResponse<'/orders', 'get'>> {
+  return contractRequest('/orders', 'get', { ...options, query })
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function postOrdersClose<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/orders/close', options)
+export function postOrdersClose(
+  options?: ContractOptions<'/orders/close', 'post'>,
+): Promise<ApiResponse<'/orders/close', 'post'>> {
+  return contractRequest('/orders/close', 'post', options ?? {})
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function postOrders<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/orders', options)
+export function postOrders(
+  options: ContractOptions<'/orders', 'post'>,
+): Promise<ApiResponse<'/orders', 'post'>> {
+  return contractRequest('/orders', 'post', options)
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function listOrders<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/orders', options)
+export function listOrders(
+  options?: ContractOptions<'/orders', 'get'>,
+): Promise<ApiResponse<'/orders', 'get'>> {
+  return contractRequest('/orders', 'get', options ?? {})
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function patchOrders<T = unknown>(id: string | number, options?: RequestInit): Promise<T> {
-  return request<T>(`/orders/${id}`, options)
-}
-
-/** Backend orders transport; callers supply their typed response projection. */
-export function confirmOrderReceipt<T = unknown>(
+export function patchOrders(
   id: string | number,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/orders/${id}/receipt`, options)
+  options: ContractOptions<'/orders/{order_id}', 'patch'>,
+): Promise<ApiResponse<'/orders/{order_id}', 'patch'>> {
+  return contractRequest('/orders/{order_id}', 'patch', { ...options, params: { order_id: id } })
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function reportOrderIssue<T = unknown>(
+export function confirmOrderReceipt(
   id: string | number,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/orders/${id}/issues`, options)
+  options: ContractOptions<'/orders/{order_id}/receipt', 'post'>,
+): Promise<ApiResponse<'/orders/{order_id}/receipt', 'post'>> {
+  return contractRequest('/orders/{order_id}/receipt', 'post', {
+    ...options,
+    params: { order_id: id },
+  })
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function cancelOrder<T = unknown>(id: string | number, options?: RequestInit): Promise<T> {
-  return request<T>(`/orders/${id}/cancel`, options)
+export function reportOrderIssue(
+  id: string | number,
+  options: ContractOptions<'/orders/{order_id}/issues', 'post'>,
+): Promise<ApiResponse<'/orders/{order_id}/issues', 'post'>> {
+  return contractRequest('/orders/{order_id}/issues', 'post', {
+    ...options,
+    params: { order_id: id },
+  })
 }
 
-/** Backend orders transport; callers supply their typed response projection. */
-export function getOrdersWithDateFilter<T = unknown>(
-  query: string | number | URLSearchParams,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/orders${query}`, options)
+export function cancelOrder(
+  id: string | number,
+  options?: ContractOptions<'/orders/{order_id}/cancel', 'post'>,
+): Promise<ApiResponse<'/orders/{order_id}/cancel', 'post'>> {
+  return contractRequest('/orders/{order_id}/cancel', 'post', {
+    ...options,
+    params: { order_id: id },
+  })
+}
+
+export function getOrdersWithDateFilter(
+  query: ApiQuery<'/orders', 'get'> | URLSearchParams | string,
+  options?: ContractOptions<'/orders', 'get'>,
+): Promise<ApiResponse<'/orders', 'get'>> {
+  return contractRequest('/orders', 'get', { ...options, query })
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -54,5 +55,5 @@ class Issue(Base):
         DateTime(timezone=True), default=clock.now, server_default=func.now()
     )
 
-    order_rel: Mapped["Order"] = relationship("Order", back_populates="issues")  # type: ignore[name-defined]
-    stop_rel: Mapped["Stop"] = relationship("Stop", back_populates="issues")  # type: ignore[name-defined]
+    order_rel: Mapped["Order"] = relationship("Order", back_populates="issues")
+    stop_rel: Mapped["Stop"] = relationship("Stop", back_populates="issues")

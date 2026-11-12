@@ -1,13 +1,21 @@
 """Plans router — dispatcher creates and publishes delivery plans."""
 
 from __future__ import annotations
+
+from waypoint_contracts.runtime import PublishResult
+from app.domain.planning.types import PlannerContext
+from pydantic import TypeAdapter
+from typing import Optional
+from waypoint_contracts.plan import PlanOut
+from waypoint_contracts.runtime import PlanValidation
+
 import datetime as dt
 import logging
-from typing import Any, Optional
+from typing import Any
 from fastapi import Body, HTTPException, status
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session as DbDep
-from waypoint_security import Principal as CurrentUser
+from waypoint_security import Actor as CurrentUser
 from app.core import clock
 from app.infrastructure.db.models.notification import Notification
 from app.infrastructure.db.models.order import Order
@@ -19,7 +27,7 @@ log = logging.getLogger("waypoint.plans")
 _DISPATCHER = None
 
 
-def _load_plan(db, plan_id: int) -> Plan:
+def _load_plan(db: DbDep, plan_id: int) -> Plan:
     plan = db.get(
         Plan,
         plan_id,
@@ -38,7 +46,7 @@ def list_plans(
     _: None = _DISPATCHER,
     date: Optional[dt.date] = None,
     status_filter: Optional[str] = None,
-):
+) -> list[PlanOut]:
     q = db.query(Plan).options(
         selectinload(Plan.trips).selectinload(Trip.stops).selectinload(Stop.outlet_rel)
     )
@@ -46,11 +54,11 @@ def list_plans(
         q = q.filter(Plan.delivery_date == date)
     if status_filter:
         q = q.filter(Plan.status == status_filter)
-    return q.order_by(Plan.created_at.desc()).all()
+    return TypeAdapter(list[PlanOut]).validate_python(q.order_by(Plan.created_at.desc()).all())
 
 
-def get_plan(plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER):
-    return _load_plan(db, plan_id)
+def get_plan(plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER) -> PlanOut:
+    return TypeAdapter(PlanOut).validate_python(_load_plan(db, plan_id))
 
 
 def auto_plan(
@@ -58,7 +66,7 @@ def auto_plan(
     current_user: CurrentUser,
     _: None = _DISPATCHER,
     date: Optional[dt.date] = None,
-):
+) -> PlanOut:
     from app.application.use_cases.planning import run
     from app.application.use_cases.locking import lock_run
     from app.infrastructure.messaging.models import PlanningJob
@@ -75,12 +83,12 @@ def auto_plan(
     plan = run(db, current_user, day)
     db.commit()
     db.refresh(plan)
-    return plan
+    return TypeAdapter(PlanOut).validate_python(plan)
 
 
 def validate_plan_endpoint(
     plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER
-):
+) -> PlanValidation:
     """Run all constraint validators against the plan and return violations."""
     from app.infrastructure.db.planning import build_context
     from app.domain.planning.validate import validate_plan as run_validate
@@ -103,7 +111,7 @@ def validate_plan_endpoint(
             planned_fuel=trip.planned_fuel or 0.0,
         )
         for stop in trip.stops:
-            order_ids = [
+            order_ids: list[int | str] = [
                 so.order_id for so in db.query(StopOrder).filter(StopOrder.stop_id == stop.id).all()
             ]
             p_trip.stops.append(
@@ -129,24 +137,26 @@ def validate_plan_endpoint(
         if d.order_id not in served
     ]
     violations = run_validate(planner_plan, ctx)
-    return {
-        "plan_id": plan_id,
-        "violations": [
-            {
-                "rule": v.rule,
-                "severity": v.severity,
-                "trip_vehicle_id": v.trip_vehicle_id,
-                "stop_outlet_id": v.stop_outlet_id,
-                "order_id": v.order_id,
-                "message": v.message,
-            }
-            for v in violations
-        ],
-        "valid": all((v.severity != "ERROR" for v in violations)),
-    }
+    return TypeAdapter(PlanValidation).validate_python(
+        {
+            "plan_id": plan_id,
+            "violations": [
+                {
+                    "rule": v.rule,
+                    "severity": v.severity,
+                    "trip_vehicle_id": v.trip_vehicle_id,
+                    "stop_outlet_id": v.stop_outlet_id,
+                    "order_id": v.order_id,
+                    "message": v.message,
+                }
+                for v in violations
+            ],
+            "valid": all((v.severity != "ERROR" for v in violations)),
+        }
+    )
 
 
-def _detach_order_from_plan(db, order_id: int, plan_id: int) -> None:
+def _detach_order_from_plan(db: DbDep, order_id: int, plan_id: int) -> None:
     """Remove an order from every stop on this plan, dropping stops left empty.
 
     Scoped to one plan: an order can appear on superseded plans too, and removing
@@ -170,16 +180,18 @@ def _detach_order_from_plan(db, order_id: int, plan_id: int) -> None:
     db.flush()
 
 
-def _trip_violations(db, trip_id: int, ctx) -> list[str]:
+def _trip_violations(db: DbDep, trip_id: int, ctx: PlannerContext) -> list[str]:
     """Blocking rule messages for one trip as currently stored: capacity, temperature,
     van-only access, home depot. Window misses are warnings and do not appear here."""
     from app.domain.planning.types import PlannerStop, PlannerTrip
     from app.domain.planning.validate import validate_trip
 
     trip = db.get(Trip, trip_id)
+    if trip is None:
+        raise HTTPException(404, detail={"code": "NOT_FOUND", "message": "Trip not found."})
     p_trip = PlannerTrip(vehicle_id=trip.vehicle_id, trip_number=trip.trip_number)
     for stop in db.query(Stop).filter(Stop.trip_id == trip_id).order_by(Stop.sequence).all():
-        order_ids = [
+        order_ids: list[int | str] = [
             so.order_id for so in db.query(StopOrder).filter(StopOrder.stop_id == stop.id).all()
         ]
         p_trip.stops.append(
@@ -199,7 +211,7 @@ def edit_plan(
     current_user: CurrentUser,
     _: None = _DISPATCHER,
     body: dict[str, Any] = Body(...),
-):
+) -> PlanOut:
     """
     Manual plan edit. Supported operations in `body.moves`:
     ```json
@@ -246,6 +258,16 @@ def edit_plan(
             raise HTTPException(
                 status_code=404, detail={"code": "NOT_FOUND", "message": "Order not found."}
             )
+        if order.delivery_date != plan.delivery_date or order.id not in {
+            item.order_id for item in ctx.orders
+        }:
+            raise HTTPException(
+                409,
+                detail={
+                    "code": "ORDER_NOT_IN_RUN",
+                    "message": "Only eligible orders from this delivery run may be moved.",
+                },
+            )
         _detach_order_from_plan(db, order_id, plan_id)
         if to_trip_id is None:
             order.status = "QUEUED"
@@ -279,10 +301,12 @@ def edit_plan(
     )
     db.commit()
     db.refresh(plan)
-    return plan
+    return TypeAdapter(PlanOut).validate_python(plan)
 
 
-def publish_plan(plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER):
+def publish_plan(
+    plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _DISPATCHER
+) -> PublishResult:
     """
     Publish a DRAFT plan:
     1. Validates — rejects if any ERROR-severity constraint violations exist.
@@ -339,7 +363,7 @@ def publish_plan(plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _
             planned_fuel=trip.planned_fuel or 0.0,
         )
         for stop in trip.stops:
-            order_ids = [
+            order_ids: list[int | str] = [
                 so.order_id for so in db.query(StopOrder).filter(StopOrder.stop_id == stop.id).all()
             ]
             p_trip.stops.append(
@@ -484,7 +508,7 @@ def publish_plan(plan_id: int, db: DbDep, current_user: CurrentUser, _: None = _
     return {
         "plan_id": plan_id,
         "status": plan.status,
-        "published_at": plan.published_at.isoformat(),
+        "published_at": plan.published_at,
         "orders_planned": orders_planned,
         "trips": len(plan.trips),
     }

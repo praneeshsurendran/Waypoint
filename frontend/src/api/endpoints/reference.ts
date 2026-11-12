@@ -1,37 +1,47 @@
-import { request } from '@/api/client/apiClient'
+/** Backend OpenAPI owns these contracts; responses are validated before returning. */
+import { contractRequest } from '@/api/client/contractClient'
+import type { ApiResponse, ApiOptions as ContractOptions } from '@/types/api/contracts'
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceDepots<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/reference/depots', options)
+export function getReferenceDepots(
+  options?: ContractOptions<'/reference/depots', 'get'>,
+): Promise<ApiResponse<'/reference/depots', 'get'>> {
+  return contractRequest('/reference/depots', 'get', options ?? {})
 }
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceVehicles<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/reference/vehicles', options)
+export function getReferenceVehicles(
+  options?: ContractOptions<'/reference/vehicles', 'get'>,
+): Promise<ApiResponse<'/reference/vehicles', 'get'>> {
+  return contractRequest('/reference/vehicles', 'get', options ?? {})
 }
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceVehicle<T = unknown>(
+export function getReferenceVehicle(
   id: string | number,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/reference/vehicles/${id}`, options)
+  options?: ContractOptions<'/reference/vehicles/{vehicle_id}', 'get'>,
+): Promise<ApiResponse<'/reference/vehicles/{vehicle_id}', 'get'>> {
+  return contractRequest('/reference/vehicles/{vehicle_id}', 'get', {
+    ...options,
+    params: { vehicle_id: id },
+  })
 }
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceOutlet<T = unknown>(
+export function getReferenceOutlet(
   id: string | number,
-  options?: RequestInit,
-): Promise<T> {
-  return request<T>(`/reference/outlets/${id}`, options)
+  options?: ContractOptions<'/reference/outlets/{outlet_id}', 'get'>,
+): Promise<ApiResponse<'/reference/outlets/{outlet_id}', 'get'>> {
+  return contractRequest('/reference/outlets/{outlet_id}', 'get', {
+    ...options,
+    params: { outlet_id: id },
+  })
 }
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceOutlets<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/reference/outlets', options)
+export function getReferenceOutlets(
+  options?: ContractOptions<'/reference/outlets', 'get'>,
+): Promise<ApiResponse<'/reference/outlets', 'get'>> {
+  return contractRequest('/reference/outlets', 'get', options ?? {})
 }
 
-/** Backend reference transport; callers supply their typed response projection. */
-export function getReferenceStoreManagers<T = unknown>(options?: RequestInit): Promise<T> {
-  return request<T>('/reference/store-managers', options)
+export function getReferenceStoreManagers(
+  options?: ContractOptions<'/reference/store-managers', 'get'>,
+): Promise<ApiResponse<'/reference/store-managers', 'get'>> {
+  return contractRequest('/reference/store-managers', 'get', options ?? {})
 }

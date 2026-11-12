@@ -1,15 +1,21 @@
 """Pure workflow transitions; transport error mapping lives in the service adapter."""
 
+from typing import Protocol
+
+
+class StatusEntity(Protocol):
+    status: str
+
 
 class InvalidTransition(ValueError):
-    def __init__(self, current, attempted, allowed):
+    def __init__(self, current: str, attempted: str, allowed: set[str]) -> None:
         self.current = current
         self.attempted = attempted
         self.allowed = sorted(allowed)
         super().__init__(f"Cannot move from {current!r} to {attempted!r}.")
 
 
-def transition(entity, new_status, transitions):
+def transition(entity: StatusEntity, new_status: str, transitions: dict[str, set[str]]) -> None:
     allowed = transitions.get(entity.status, set())
     if new_status not in allowed:
         raise InvalidTransition(entity.status, new_status, allowed)

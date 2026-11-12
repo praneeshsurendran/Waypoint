@@ -1,5 +1,7 @@
 """Owned local read projections; never imports identity/network ORM models."""
 
+from waypoint_contracts.events import EventEnvelope
+
 import datetime as dt
 from sqlalchemy.dialects.postgresql import insert
 from app.infrastructure.db.session import SessionLocal
@@ -17,7 +19,7 @@ MODELS = {
 }
 
 
-def handle(event):
+def handle(event: EventEnvelope) -> None:
     digest = event.fingerprint()
     with SessionLocal.begin() as db:
         accepted = db.execute(
@@ -27,7 +29,8 @@ def handle(event):
             .returning(Inbox.event_id)
         ).scalar_one_or_none()
         if not accepted:
-            if db.get(Inbox, str(event.event_id)).payload_hash != digest:
+            previous = db.get(Inbox, str(event.event_id))
+            if previous is None or previous.payload_hash != digest:
                 raise ValueError("event identity conflict")
             return
         if event.event_type == "intake.close_requested":

@@ -11,7 +11,7 @@ export interface LoadingWorkspace {
 
 /** Dock work for the loader: quantities, safety checks, shortfalls and loading proof. */
 export interface LoadingApi {
-  listLoads(filter?: { depot?: string }): Promise<Load[]>
+  listLoads(filter?: { depot?: string | undefined }): Promise<Load[]>
   getLoad(loadId: string): Promise<Load | undefined>
   getWorkspace(loadId: string, depot?: string): Promise<LoadingWorkspace | undefined>
   acknowledgeRevision(loadId: string, expectedRevision: number): Promise<void>

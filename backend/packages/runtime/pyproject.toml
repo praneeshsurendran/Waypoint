@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waypoint-runtime"
+version = "0.3.0"
+requires-python = ">=3.12"
+dependencies = ["redis==8.1.0", "pydantic-settings==2.6.1", "fastapi==0.162.4", "sqlalchemy==2.0.36"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["waypoint_*"]

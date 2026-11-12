@@ -1,3 +1,4 @@
+import { required } from '@/test/fixtures/required'
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createHttpDeliveryApi } from '@/infrastructure/adapters/http/delivery'
@@ -24,7 +25,7 @@ afterEach(() => {
 it('replays an offline arrival as ARRIVED and never fabricates a delivery', async () => {
   const api = createHttpDeliveryApi()
   await api.arrive('12')
-  const queued = (await localDb.queue.toArray())[0]
+  const queued = required((await localDb.queue.toArray())[0])
   expect(queued.event?.outcome).toBe('ARRIVED')
   fetchMock.mockImplementation(async (_url, options) => {
     const { events } = JSON.parse(String(options?.body))
@@ -73,16 +74,18 @@ it.each([false, true])(
     await api.sync(true, { retryFailed: true })
     expect(uploads).toBe(signature ? 2 : 1)
     if (signature)
-      expect(JSON.parse(requests[0]).events[0].pod_signature_path).toBe('/uploads/proof-2.png')
+      expect(JSON.parse(required(requests[0])).events[0].pod_signature_path).toBe(
+        '/uploads/proof-2.png',
+      )
     expect(requests[0]).toBe(requests[1])
-    expect((await localDb.queue.toArray())[0].status).toBe('accepted')
+    expect(required((await localDb.queue.toArray())[0]).status).toBe('accepted')
   },
 )
 
 it('recovers a syncing record after a browser crash and preserves delays as nonterminal events', async () => {
   const api = createHttpDeliveryApi()
   await api.reportDelay('12', 'Traffic', '07:30', 'delay')
-  const item = (await localDb.queue.toArray())[0]
+  const item = required((await localDb.queue.toArray())[0])
   expect(item.event?.outcome).toBe('DELAY')
   await localDb.queue.update(item.id, { status: 'syncing' })
   fetchMock.mockResolvedValue(Response.json([{ client_op_id: item.id, accepted: true }]))
@@ -109,7 +112,7 @@ it('keeps partial handoffs partial and never fabricates PIN verification', async
       binding: 'binding',
     },
   })
-  const queued = (await localDb.queue.toArray())[0]
+  const queued = required((await localDb.queue.toArray())[0])
   expect(queued.event?.outcome).toBe('PARTIAL')
   expect(queued.event?.receiver_pin_ok).toBeUndefined()
   expect(queued.event?.note).toContain('Five cases missing')
@@ -118,7 +121,15 @@ it('keeps partial handoffs partial and never fabricates PIN verification', async
 it('restores an unaccepted proof for fresh sign-off while retaining the original evidence', async () => {
   vi.stubGlobal('localStorage', {
     getItem: (key: string) =>
-      key === 'waypoint.user' ? JSON.stringify({ id: 7, role: 'DRIVER' }) : null,
+      key === 'waypoint.user'
+        ? JSON.stringify({
+            id: 7,
+            username: 'driver',
+            full_name: 'Driver',
+            is_active: true,
+            role: 'DRIVER',
+          })
+        : null,
   })
   const api = createHttpDeliveryApi()
   await api.saveProof('12', {
@@ -127,7 +138,7 @@ it('restores an unaccepted proof for fresh sign-off while retaining the original
     receiver: 'Manager',
     exception: '',
   })
-  const queued = (await localDb.queue.toArray())[0]
+  const queued = required((await localDb.queue.toArray())[0])
   await api.reopenProofForSignOff(queued.id)
   expect((await localDb.queue.get(queued.id))?.status).toBe('superseded')
   expect(await localDb.evidence.get(queued.evidenceId)).toBeDefined()
@@ -140,7 +151,15 @@ it('restores an unaccepted proof for fresh sign-off while retaining the original
 it('retains the mapped route through an offline restart and queues departure without an arrival', async () => {
   vi.stubGlobal('localStorage', {
     getItem: (key: string) =>
-      key === 'waypoint.user' ? JSON.stringify({ id: 7, role: 'DRIVER' }) : null,
+      key === 'waypoint.user'
+        ? JSON.stringify({
+            id: 7,
+            username: 'driver',
+            full_name: 'Driver',
+            is_active: true,
+            role: 'DRIVER',
+          })
+        : null,
   })
   connection.onLine = true
   fetchMock.mockImplementation(async (url) =>
@@ -151,7 +170,7 @@ it('retains the mapped route through an offline restart and queues departure wit
           status: 'LOADED',
           vehicle_id: 'V1',
           trip_number: 1,
-          stops: [{ id: 12, outlet_id: 'O1', status: 'PENDING' }],
+          stops: [{ id: 12, trip_id: 1, sequence: 1, outlet_id: 'O1', status: 'PENDING' }],
         })
       : Response.json([]),
   )
@@ -161,21 +180,28 @@ it('retains the mapped route through an offline restart and queues departure wit
   connection.onLine = false
   fetchMock.mockClear()
   const restarted = createHttpDeliveryApi()
-  expect((await restarted.getRoute()).stops[0].id).toBe('12')
+  expect(required((await restarted.getRoute()).stops[0]).id).toBe('12')
   await restarted.startRoute()
   expect(fetchMock).not.toHaveBeenCalled()
-  const departure = (await localDb.queue.toArray())[0]
+  const departure = required((await localDb.queue.toArray())[0])
   expect(departure.event?.outcome).toBe('STARTED')
   const offline = await restarted.getRoute()
   expect(offline.started).toBe(true)
-  expect(offline.stops[0].status).toBe('Upcoming')
+  expect(required(offline.stops[0]).status).toBe('Upcoming')
 })
 
 it('confirms a manager handoff through idempotent receipt commands without driver privileges', async () => {
   vi.stubGlobal('localStorage', {
     getItem: (key: string) =>
       key === 'waypoint.user'
-        ? JSON.stringify({ id: 8, role: 'STORE_MANAGER', outlet_id: 'O1' })
+        ? JSON.stringify({
+            id: 8,
+            username: 'manager',
+            full_name: 'Manager',
+            is_active: true,
+            role: 'STORE_MANAGER',
+            outlet_id: 'O1',
+          })
         : null,
   })
   const api = createHttpDeliveryApi()
@@ -201,15 +227,54 @@ it('confirms a manager handoff through idempotent receipt commands without drive
     expect(String(url)).toContain('/orders/21/receipt')
     payloads.push(String(options?.body))
     if (payloads.length === 1) throw new TypeError('Receipt acknowledgement lost')
-    return Response.json({}, { status: 201 })
+    return Response.json({ ok: true, receipt_status: 'SHORT' }, { status: 201 })
   })
   await expect(api.sync(true)).rejects.toThrow('acknowledgement lost')
   await api.sync(true, { retryFailed: true })
   expect(payloads[0]).toBe(payloads[1])
-  expect(JSON.parse(payloads[0])).toMatchObject({
+  expect(JSON.parse(required(payloads[0]))).toMatchObject({
     outcome: 'SHORT',
     received_qty: 5,
     affected_qty: 5,
   })
-  expect((await localDb.queue.toArray())[0].status).toBe('accepted')
+  expect(required((await localDb.queue.toArray())[0]).status).toBe('accepted')
+})
+
+it('does not expose another authenticated actor’s cached private evidence', async () => {
+  let actor = 7
+  vi.stubGlobal('window', { location: { origin: 'http://localhost:8000' } })
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) =>
+      key === 'waypoint.user'
+        ? JSON.stringify({
+            id: actor,
+            username: 'user',
+            full_name: 'User',
+            role: 'DRIVER',
+            is_active: true,
+          })
+        : null,
+  })
+  const id = '/uploads/private-proof.png'
+  await localDb.evidence.put({
+    id,
+    actorId: 7,
+    kind: 'delivery',
+    entityId: '12',
+    photo: new Blob(['private']),
+    fileName: 'private.png',
+    createdAt: new Date().toISOString(),
+    revision: 1,
+    accepted: true,
+  })
+  const api = createHttpDeliveryApi()
+  expect((await api.getEvidence(id))?.actorId).toBe(7)
+  expect(fetchMock).not.toHaveBeenCalled()
+  actor = 8
+  fetchMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+  expect(await api.getEvidence(id)).toBeUndefined()
+  expect(fetchMock).toHaveBeenCalledOnce()
+  // Preserve the original owner's local proof rather than deleting it on account changes.
+  actor = 7
+  expect((await api.getEvidence(id))?.actorId).toBe(7)
 })

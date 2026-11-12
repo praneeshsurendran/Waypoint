@@ -38,13 +38,13 @@ export function Reveal({
   className,
 }: {
   children: ReactNode
-  delay?: number
-  y?: number
-  x?: number
-  scale?: number
+  delay?: number | undefined
+  y?: number | undefined
+  x?: number | undefined
+  scale?: number | undefined
   /** Animate on load instead of waiting for the scroll (above the fold). */
-  now?: boolean
-  className?: string
+  now?: boolean | undefined
+  className?: string | undefined
 }) {
   const start = { opacity: 0, y, x, scale }
   const end = { opacity: 1, y: 0, x: 0, scale: 1 }
@@ -67,7 +67,7 @@ export function Reveal({
 }
 
 /** A number that counts up when it scrolls into view. Screen readers get the final value. */
-export function CountUp({ to, duration = 1.4 }: { to: number; duration?: number }) {
+export function CountUp({ to, duration = 1.4 }: { to: number; duration?: number | undefined }) {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true })
   const reduced = useReducedMotion()
@@ -195,7 +195,7 @@ export function RunPreview() {
   return (
     <m.div
       className="entry-preview-tilt"
-      style={reduced ? undefined : { rotateX: tiltX, rotateY: tiltY, transformPerspective: 900 }}
+      style={reduced ? {} : { rotateX: tiltX, rotateY: tiltY, transformPerspective: 900 }}
       onPointerMove={(event) => {
         if (reduced || event.pointerType === 'touch') return
         const box = event.currentTarget.getBoundingClientRect()

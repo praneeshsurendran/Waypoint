@@ -14,7 +14,7 @@ export function SignedReceipt({
   orderId: string
   outletId: string
   evidence: Evidence
-  url?: string
+  url?: string | undefined
 }) {
   const [open, setOpen] = useState(false)
   return (

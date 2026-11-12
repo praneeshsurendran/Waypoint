@@ -1,4 +1,8 @@
 from __future__ import annotations
+import datetime as dt
+from sqlalchemy.orm import Session
+from waypoint_security import Actor
+from app.application.interfaces.planning import AllocationStrategy
 import logging
 from fastapi import HTTPException, status
 from app.core import clock
@@ -10,7 +14,12 @@ from app.services.state_machine import transition_order
 log = logging.getLogger("waypoint.planning")
 
 
-def run(db, current_user, date=None, strategy=None):
+def run(
+    db: Session,
+    current_user: Actor,
+    date: dt.date | None = None,
+    strategy: AllocationStrategy | None = None,
+) -> Plan:
     """
     Run the greedy bin-packing allocation algorithm for `date` (default: tomorrow).
     Creates a DRAFT plan. Supersedes any previous DRAFT for the same date.
