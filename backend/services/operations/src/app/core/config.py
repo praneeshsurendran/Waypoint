@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from functools import lru_cache
 from typing import Annotated
 
@@ -13,6 +14,7 @@ class Settings(BaseSettings):
     environment: str = "local"
     service_mode: str = "legacy"
     identity_url: str | None = None
+    intelligence_url: str | None = None
     demo_mode: bool = True
     storage_backend: str = "local"
     pod_bucket: str | None = None
@@ -23,6 +25,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production(self) -> "Settings":
         if self.environment == "production":
+            if self.intelligence_url and not self.intelligence_url.startswith("https://"):
+                raise ValueError("Production intelligence calls require HTTPS")
             if self.storage_backend != "s3" or not self.pod_bucket:
                 raise ValueError("Production requires private S3 proof storage")
             if self.demo_mode or self.seed_on_start:
@@ -60,6 +64,7 @@ class Settings(BaseSettings):
     # Business clock (demo)
     # "Today" for the demo: if not set, defaults to one day before demo_delivery_date
     business_date: str | None = None
+    demo_time: dt.time | None = None
     demo_delivery_date: str = "2024-04-10"
 
     # App timezone

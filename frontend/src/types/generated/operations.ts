@@ -1,4 +1,4 @@
-/* Generated from operations-v1.json (1985567c7c578e5e094a7c99c158065dee2fd34321aa19eb66cb1ba610aafaec). Do not edit. */
+/* Generated from operations-v1.json (8a795b09691de9d62d41d7d4dacdf40b1458706838c3271744e419c11b46d68b). Do not edit. */
 export interface paths {
     "/health/live": {
         parameters: {
@@ -761,6 +761,23 @@ export interface paths {
         };
         /** Demand Forecast */
         get: operations["demand_forecast_api_v1_analytics_demand_forecast_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/plan-predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan Predictions */
+        get: operations["plan_predictions_api_v1_analytics_plan_predictions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1641,6 +1658,13 @@ export interface components {
              */
             recorded_at: string;
         };
+        /** PredictionResponse */
+        PredictionResponse: {
+            /** Model Version */
+            model_version: string;
+            /** Predictions */
+            predictions: components["schemas"]["StopPrediction"][];
+        };
         /** PublishResult */
         PublishResult: {
             /** Plan Id */
@@ -1761,6 +1785,15 @@ export interface components {
             total_cases?: number | null;
             /** Proof Id */
             proof_id?: string | null;
+        };
+        /** StopPrediction */
+        StopPrediction: {
+            /** Delivery Id */
+            delivery_id: string;
+            /** Pred Service Min */
+            pred_service_min: number;
+            /** Pred Late Prob */
+            pred_late_prob: number;
         };
         /** SyncBatch */
         SyncBatch: {
@@ -7096,7 +7129,9 @@ export interface operations {
     demand_forecast_api_v1_analytics_demand_forecast_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -7109,6 +7144,120 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DemandForecast"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HttpErrorResponse"];
+                };
+            };
+        };
+    };
+    plan_predictions_api_v1_analytics_plan_predictions_get: {
+        parameters: {
+            query?: {
+                plan_id?: number | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponse"];
                 };
             };
             /** @description Bad Request */

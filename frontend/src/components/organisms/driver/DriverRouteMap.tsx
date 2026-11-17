@@ -45,6 +45,8 @@ export function DriverRouteMap({
           <OperationsMap
             stops={stops}
             vehicles={vehicle ? [vehicle] : []}
+            selectedVehicleId={vehicle?.id}
+            vehicleOrders={vehicle ? { [vehicle.id]: stops.flatMap((item) => item.orderIds) } : {}}
             selectedStopId={stop?.id}
             offline={offline}
             fitRoute

@@ -2,10 +2,12 @@
 
 ## Boundaries and migration decision
 
-Four independently deployable APIs are implemented: identity-access, network-fleet,
-operations, notifications. They use separate database URLs, migration histories and
-principals. Outbox publishers, consumer processes and a planning worker run independently.
-There is no custom FastAPI gateway, Redis requirement, IaC or CI/CD implementation.
+Five independently deployable APIs are implemented: identity-access, network-fleet,
+operations, notifications and stateless intelligence. The four database-owning APIs use
+separate database URLs, migration histories and principals. Intelligence owns no database;
+it loads deployment-controlled private model artifacts. Outbox publishers, consumer processes and a planning worker run independently.
+Redis provides shared request throttling and short-lived reference caching. No custom FastAPI
+gateway, infrastructure-as-code or CI/CD is implemented.
 
 The proposed eight-context service map was reconciled with the code rather than implemented
 as eight copies of a shared monolith. `OrderOut` traversed plans, trips, stops, deferrals,
@@ -23,6 +25,10 @@ flowchart LR
     Edge --> Network[Network/fleet API]
     Edge --> Ops[Operations API]
     Edge --> Notices[Notifications API]
+    Edge --> ML[Intelligence CPU inference]
+    Ops --> ML
+    ML --> Models[Verified private saved models and reference features]
+    ML -. authoritative bearer verification .-> Identity
     Identity --> IDB[(Identity database)]
     Network --> NDB[(Network database)]
     Ops --> ODB[(Operations database)]
@@ -58,8 +64,8 @@ strategies and workflow rules live in `operations/src/app/domain`; ORM models an
 DB mapping live under `infrastructure/db`. SQLAlchemy sessions are units of work;
 `OperationsUnitOfWork` and `JobRepository` explicitly bind job/plan/outbox updates.
 Storage and allocation use typed ports; the deterministic allocator can be replaced by a
-strategy without changing the independent feasibility validator. There is no solver dependency
-or claim of optimal allocation. Its final feasibility pass removes individually infeasible orders, reschedules remaining
+strategy without changing the independent feasibility validator. The operational allocator has no solver dependency
+or claim of optimal allocation. Offline Datathon CP-SAT optimization is separate. Its final feasibility pass removes individually infeasible orders, reschedules remaining
 routes and records deferral explanations. Reducing avoidable deferrals remains an optimization objective.
 
 Operational state changes and outbox rows commit together. Consumers commit inbox claims
@@ -125,3 +131,9 @@ logs. Browser push/SMTP/SMS providers are not configured: subscription requests 
 return 501 instead of falsely reporting delivery. OpenTelemetry export and actual AWS
 network/IAM behavior still require deployment validation; correlation and W3C trace context
 propagation and structured request timing logs are implemented locally.
+
+## Datathon integration
+
+See [models and preprocessing](../../docs/datathon-integration.md) and the
+[challenge verification](../../docs/challenge-verification.md) for inference contracts,
+private data setup, chronological validation, limits and current acceptance results.

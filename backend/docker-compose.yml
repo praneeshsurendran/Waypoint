@@ -16,9 +16,12 @@ x-aws: &aws
 x-ops: &ops
   <<: *aws
   DATABASE_URL: postgresql+psycopg://waypoint_operations:${OPERATIONS_DB_PASSWORD:-local-operations-change-me}@db:5432/waypoint_operations
+  INTELLIGENCE_URL: http://intelligence:8000
+  DATA_DIR: /opt/waypoint/private/intelligence/data/General Data
   SERVICE_MODE: operations
   DEMO_MODE: "true"
-  DEMO_DELIVERY_DATE: "2026-11-13"
+  DEMO_TIME: ${DEMO_TIME:-09:00}
+  DEMO_DELIVERY_DATE: ${DEMO_DELIVERY_DATE:-2026-02-16}
   UPLOAD_DIR: /tmp/uploads
   STORAGE_BACKEND: s3
   POD_BUCKET: waypoint-private-proofs
@@ -122,6 +125,7 @@ services:
     healthcheck: {disable: true}
 
   seed:
+    volumes: ["./private/intelligence/data:/opt/waypoint/private/intelligence/data:ro"]
     build: {context: ., dockerfile: local/Dockerfile}
     environment:
       <<: *ops
@@ -150,7 +154,16 @@ services:
     image: waypoint-network:local
     environment: *network
     depends_on: {seed: {condition: service_completed_successfully}, redis: {condition: service_healthy}}
+  intelligence:
+    build: {context: ., dockerfile: services/intelligence/Dockerfile}
+    environment:
+      <<: *aws
+      WAYPOINT_INTELLIGENCE_WORKSPACE: /opt/waypoint/private/intelligence
+    volumes: ["./private/intelligence:/opt/waypoint/private/intelligence:ro"]
+    depends_on: {identity: {condition: service_healthy}, redis: {condition: service_healthy}}
+
   operations:
+    volumes: ["./private/intelligence/data:/opt/waypoint/private/intelligence/data:ro"]
     stop_grace_period: 40s
     build: {context: ., dockerfile: services/operations/Dockerfile}
     pull_policy: build

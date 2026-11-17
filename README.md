@@ -18,13 +18,28 @@ docker compose --env-file backend/.env up --build
 ```
 
 Frontend: http://localhost:5173. API ingress: http://localhost:8000/api/v1.
-The local stack uses synthetic data, one-shot migrations, separate service credentials and
+The local stack uses the authorized reference data in `backend/private/intelligence` when present
+(and independent synthetic fixtures otherwise), one-shot migrations, separate service credentials and
 LocalStack for EventBridge/SQS/S3. Logins are `dispatcher`, `loader`, `driver`, `manager`,
 `admin`, using `DEMO_PASSWORD` from the local environment. Keep production credentials and
 original competition datasets outside images and public repositories.
 
 Do not reset or delete existing database/upload volumes to migrate. The original source and
 new owner data need the [backup/transfer runbook](backend/docs/runbooks/migration.md).
+
+The private datasets and model artifacts have been copied into the backend on this machine.
+`Waypoint-Datathon` may be moved away. A fresh checkout must restore these private files;
+see [Intelligence setup and inference](backend/intelligence/README.md).
+
+## Judge walkthrough
+
+Follow the [numbered current walkthrough](docs/judge-walkthrough.md) across all four operational
+roles, including offline proof, receipts, shortfalls and model estimates.
+
+## Judge walkthrough
+
+Follow the [current numbered four-role walkthrough](docs/judge-walkthrough.md). The local
+clock is fixed at 09:00 for reproducible intake; production must disable demo mode.
 
 ## Development and validation
 
@@ -46,3 +61,5 @@ No CI/CD, infrastructure-as-code or live AWS resources are implemented here.
 The original deployment links, fixture-specific accounts, dates and judge walkthrough are
 preserved in [the archived walkthrough](backend/docs/legacy-walkthrough.md). They describe the
 previous demo and are not current local startup instructions.
+
+Current full-project findings and acceptance evidence: [challenge verification](docs/challenge-verification.md).

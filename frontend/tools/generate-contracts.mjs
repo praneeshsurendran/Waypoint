@@ -23,7 +23,7 @@ async function output(relative, content) {
   }
 }
 const manifest = []
-for (const [owner, short] of [['identity-access','identity'], ['network-fleet','network'], ['operations','operations'], ['notifications','notifications']]) {
+for (const [owner, short] of [['identity-access','identity'], ['network-fleet','network'], ['operations','operations'], ['notifications','notifications'], ['intelligence','intelligence']]) {
   const source = new URL(`${owner}-v1.json`, sources)
   const text = await readFile(source, 'utf8')
   const document = JSON.parse(text)
@@ -84,4 +84,4 @@ for (const [owner, short] of [['identity-access','identity'], ['network-fleet','
 }
 await output('src/api/generated/manifest.json', JSON.stringify(manifest, null, 2) + '\n')
 if (drift) process.exitCode = 1
-else process.stdout.write(`Contracts ${check ? 'verified' : 'generated'} for four services (${manifest.length} operations).\n`)
+else process.stdout.write(`Contracts ${check ? 'verified' : 'generated'} for five services (${manifest.length} operations).\n`)

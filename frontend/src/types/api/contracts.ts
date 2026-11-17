@@ -2,12 +2,14 @@
 import type { paths as IdentityPaths } from '@/types/generated/identity'
 import type { paths as NetworkPaths } from '@/types/generated/network'
 import type { paths as OperationsPaths } from '@/types/generated/operations'
+import type { paths as IntelligencePaths } from '@/types/generated/intelligence'
 import type { paths as NotificationPaths } from '@/types/generated/notifications'
 
 type Probes = '/health/live' | '/health/ready'
 type Paths = Omit<IdentityPaths, Probes> &
   Omit<NetworkPaths, Probes> &
   Omit<NotificationPaths, Probes> &
+  Omit<IntelligencePaths, Probes> &
   OperationsPaths
 type Endpoints = { [P in keyof Paths as P extends `/api/v1${infer Rest}` ? Rest : P]: Paths[P] }
 export type ApiPath = keyof Endpoints

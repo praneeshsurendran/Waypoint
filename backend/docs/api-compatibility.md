@@ -19,6 +19,7 @@ are committed to the backend. Driver POD photos/signatures use private object st
 | identity-access | POST | `/api/v1/auth/login` | none | `{'$ref': '#/components/schemas/LoginRequest'}` | `200: {'$ref': '#/components/schemas/TokenResponse'}` | public probe/login |
 | identity-access | GET | `/api/v1/auth/me` | none | `none` | `200: {'$ref': '#/components/schemas/UserProfile'}` | authenticated |
 | identity-access | PATCH | `/api/v1/auth/me` | none | `{'$ref': '#/components/schemas/ContactUpdate'}` | `200: {'$ref': '#/components/schemas/UserProfile'}` | authenticated |
+| identity-access | POST | `/api/v1/auth/account-change-requests` | none | `{'$ref': '#/components/schemas/AccountChangeRequest'}` | `201: {'$ref': '#/components/schemas/OkResult'}` | authenticated |
 | identity-access | GET | `/api/v1/admin/users` | none | `none` | `200: {'items': {'$ref': '#/components/schemas/AdminUserOut'}, 'type': 'array', 'title': 'Response List Users Api V1 Admin Users Get'}` | ADMIN |
 | identity-access | POST | `/api/v1/admin/users` | none | `{'$ref': '#/components/schemas/AdminUserCreate'}` | `201: {'$ref': '#/components/schemas/AdminUserOut'}` | ADMIN |
 | identity-access | PATCH | `/api/v1/admin/users/{user_id}` | user_id (required) | `{'$ref': '#/components/schemas/AdminUserUpdate'}` | `200: {'$ref': '#/components/schemas/AdminUserOut'}` | ADMIN |
@@ -84,7 +85,8 @@ are committed to the backend. Driver POD photos/signatures use private object st
 | operations | GET | `/api/v1/admin/analytics/daily` | date | `none` | `200: {'$ref': '#/components/schemas/DailySummary'}` | DISPATCHER |
 | operations | GET | `/api/v1/admin/analytics/fuel` | iso_year, iso_week | `none` | `200: {'$ref': '#/components/schemas/FuelSummary'}` | DISPATCHER |
 | operations | GET | `/api/v1/admin/audit` | limit | `none` | `200: {'type': 'array', 'items': {'$ref': '#/components/schemas/AuditOut'}, 'title': 'Response List Audit Api V1 Admin Audit Get'}` | ADMIN |
-| operations | GET | `/api/v1/analytics/demand-forecast` | none | `none` | `200: {'$ref': '#/components/schemas/DemandForecast'}` | DISPATCHER |
+| operations | GET | `/api/v1/analytics/demand-forecast` | authorization | `none` | `200: {'$ref': '#/components/schemas/DemandForecast'}` | DISPATCHER |
+| operations | GET | `/api/v1/analytics/plan-predictions` | plan_id, authorization | `none` | `200: {'$ref': '#/components/schemas/PredictionResponse'}` | DISPATCHER |
 | operations | POST | `/api/v1/planning/jobs` | none | `{'$ref': '#/components/schemas/JobRequest'}` | `202: {'$ref': '#/components/schemas/JobResult'}` | DISPATCHER |
 | operations | GET | `/api/v1/planning/jobs/{job_id}` | job_id (required) | `none` | `200: {'$ref': '#/components/schemas/JobStatus'}` | DISPATCHER |
 | operations | POST | `/api/v1/planning/jobs/{job_id}/cancel` | job_id (required) | `none` | `200: {'$ref': '#/components/schemas/JobResult'}` | DISPATCHER |
@@ -95,3 +97,8 @@ are committed to the backend. Driver POD photos/signatures use private object st
 | notifications | POST | `/api/v1/notifications/push-subscriptions` | none | `none` | `` | authenticated |
 | notifications | GET | `/health/live` | none | `none` | `200: {'$ref': '#/components/schemas/LiveHealth'}` | public probe/login |
 | notifications | GET | `/health/ready` | none | `none` | `200: {'$ref': '#/components/schemas/ReadyHealth'}` | public probe/login |
+| intelligence | GET | `/health/live` | none | `none` | `200: {'additionalProperties': {'type': 'string'}, 'type': 'object', 'title': 'Response Live Health Live Get'}` | public probe/login |
+| intelligence | GET | `/health/ready` | none | `none` | `200: {'additionalProperties': {'type': 'string'}, 'type': 'object', 'title': 'Response Ready Health Ready Get'}` | public probe/login |
+| intelligence | POST | `/api/v1/intelligence/predictions` | none | `{'$ref': '#/components/schemas/PredictionRequest'}` | `200: {'$ref': '#/components/schemas/PredictionResponse'}` | authenticated |
+| intelligence | POST | `/api/v1/intelligence/planned-predictions` | none | `{'$ref': '#/components/schemas/PlannedPredictionRequest'}` | `200: {'$ref': '#/components/schemas/PredictionResponse'}` | authenticated |
+| intelligence | GET | `/api/v1/intelligence/forecast` | none | `none` | `200: {'$ref': '#/components/schemas/ForecastResponse'}` | authenticated |

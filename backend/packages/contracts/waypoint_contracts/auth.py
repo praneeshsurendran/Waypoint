@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 from typing import Optional
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from waypoint_contracts.runtime import Role
 
 from waypoint_contracts.common import ContractModel as BaseModel
@@ -34,3 +34,8 @@ class UserProfile(OrmModel):
     outlet_id: Optional[str] = None
     vehicle_id: Optional[str] = None
     depot_id: Optional[str] = None
+
+
+class AccountChangeRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    detail: str = Field(min_length=4, max_length=1000)

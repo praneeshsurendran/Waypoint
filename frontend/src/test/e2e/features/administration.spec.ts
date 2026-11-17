@@ -187,11 +187,10 @@ test.describe('administration', () => {
     await dialog.getByRole('radio', { name: /Suspend now/ }).click()
     await dialog.getByRole('button', { name: 'Suspend now' }).click()
     await expect(dialog.getByText('Give a reason to suspend now.')).toBeVisible()
-    // Suspending after the trip schedules it and keeps access until then.
-    await dialog.getByRole('radio', { name: /Suspend after the trip ends/ }).click()
-    await dialog.getByRole('button', { name: 'Schedule suspension' }).click()
-    await expect(page.getByText('Suspension scheduled for after the trip')).toBeVisible()
-    await expect(page.getByText('Suspends after trip').first()).toBeVisible()
+    // A future suspension cannot be promised by the current identity API.
+    await expect(dialog.getByRole('radio', { name: /Suspend after the trip ends/ })).toHaveCount(0)
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page.getByText('Active', { exact: true }).first()).toBeVisible()
   })
 
   test('suspending now with a reason ends access and alerts the dispatcher', async ({ page }) => {

@@ -20,4 +20,7 @@ def planning_queue() -> SQSQueue:
 
 
 def shutdown() -> None:
+    from app.infrastructure.intelligence import close
+
+    close()
     engine.dispose()

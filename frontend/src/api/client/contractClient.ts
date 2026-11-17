@@ -5,9 +5,10 @@ import type { ApiPath, ApiMethod, ApiResponse, ContractOptions } from '@/types/a
 
 type ValidatorModule = Record<string, (data: unknown) => boolean>
 const loaders: Record<
-  'identity' | 'network' | 'operations' | 'notifications',
+  'identity' | 'network' | 'operations' | 'notifications' | 'intelligence',
   () => Promise<ValidatorModule>
 > = {
+  intelligence: () => import('@/api/generated/intelligence.mjs'),
   identity: () => import('@/api/generated/identity.mjs'),
   network: () => import('@/api/generated/network.mjs'),
   operations: () => import('@/api/generated/operations.mjs'),

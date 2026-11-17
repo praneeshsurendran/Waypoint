@@ -202,7 +202,7 @@ test('offline route moves to the next outlet and proof navigation follows its ar
   await page
     .getByRole('list', { name: 'Ordered delivery outlets' })
     .getByRole('link')
-    .filter({ hasText: /OUT/ })
+    .filter({ hasText: 'OUT008' })
     .first()
     .click()
   await page.getByRole('button', { name: 'Confirm I’ve parked' }).click()

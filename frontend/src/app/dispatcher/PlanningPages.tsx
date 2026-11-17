@@ -1,3 +1,4 @@
+import { PlanPredictionPanel } from '@/components/organisms/dispatcher/PlanPredictionPanel'
 import { useOperations, useAction } from '@/queries/useOperations'
 import { useApis } from '@/app/providers/ApisContext'
 import { useBusinessClock } from '@/queries/account/useBusinessClock'
@@ -242,6 +243,7 @@ export function AllocationPage() {
           </Button>
         }
       />
+      <PlanPredictionPanel />
       <PlanningSteps current={1} />
 
       {priorityViolation && (

@@ -28,19 +28,21 @@ test.describe('store manager', () => {
     await page.getByRole('link', { name: 'Create orders' }).click()
     await expect(page.getByRole('heading', { name: 'Create orders' })).toBeVisible()
     const chilled = page.getByRole('region', { name: 'Fresh · Chilled' })
-    // Set the count with the stepper, then correct the estimated weight and volume by hand.
+    // Weight and volume follow the same case-sizing rule enforced by the backend.
     await chilled.getByRole('button', { name: 'Add one case' }).click()
     await chilled.getByRole('button', { name: 'Add one case' }).click()
-    await chilled.getByLabel('Weight · kg').fill('130')
-    await chilled.getByLabel('Volume · m³').fill('1.3')
+    await expect(
+      chilled.getByText('Estimated load · 138 kg · 0.74 m³', { exact: false }),
+    ).toBeVisible()
+    await expect(chilled.getByRole('textbox', { name: 'Weight · kg' })).toHaveCount(0)
     // Pick the window from the From and To lists; nothing is typed.
     await chilled.getByLabel('From').selectOption({ label: '6:00 AM' })
     await chilled.getByLabel('To').selectOption({ label: '8:00 AM' })
     await expect(chilled.getByText('6:00 AM to 8:00 AM · 2 hours')).toBeVisible()
-    await expect(page.getByText('Combined weight · 370 kg')).toBeVisible()
+    await expect(page.getByText('Combined weight · 303.6 kg')).toBeVisible()
     await page.getByRole('button', { name: 'Review 2 orders' }).click()
     await expect(page.getByRole('heading', { name: 'Review & confirm' })).toBeVisible()
-    await expect(page.getByText('20 cases · 130 kg · 1.3 m³')).toBeVisible()
+    await expect(page.getByText('20 cases · 138 kg · 0.74 m³')).toBeVisible()
     await expect(page.getByText('06:00–08:00').first()).toBeVisible()
     await page.getByRole('button', { name: 'Confirm 2 orders' }).click()
     await expect(page.getByRole('heading', { name: 'Orders confirmed' })).toBeVisible()
@@ -48,21 +50,26 @@ test.describe('store manager', () => {
     // The confirmed quantities are what the overview shows afterwards, even after a reload.
     await page.goto('/store-manager/overview')
     await page.reload()
-    await expect(page.getByText('20 cases · 130 kg · 1.3 m³')).toBeVisible()
+    await expect(page.getByText('20 cases · 138 kg · 0.74 m³')).toBeVisible()
     await expect(page.getByText('Window 06:00–08:00').first()).toBeVisible()
   })
 
-  test('weight and volume follow the cases until they are edited', async ({ page }) => {
+  test('weight and volume follow case quantities and cannot be forged through the form', async ({
+    page,
+  }) => {
     await clearStorage(page)
     await page.goto('/store-manager/orders/new')
     const dry = page.getByRole('region', { name: 'Fresh · Dry' })
     await dry.getByRole('button', { name: 'Add one case' }).click()
-    await expect(dry.getByLabel('Weight · kg')).toHaveValue('250')
-    await expect(dry.getByLabel('Volume · m³')).toHaveValue('2.5')
-    await dry.getByLabel('Weight · kg').fill('260')
+    await expect(
+      dry.getByText('Estimated load · 172.5 kg · 0.925 m³', { exact: false }),
+    ).toBeVisible()
+    await expect(dry.getByRole('textbox', { name: 'Weight · kg' })).toHaveCount(0)
+    await expect(dry.getByRole('textbox', { name: 'Volume · m³' })).toHaveCount(0)
     await dry.getByRole('button', { name: 'Add one case' }).click()
-    await expect(dry.getByLabel('Weight · kg')).toHaveValue('260')
-    await expect(dry.getByText('Weight and volume are as you entered them.')).toBeVisible()
+    await expect(
+      dry.getByText('Estimated load · 179.4 kg · 0.962 m³', { exact: false }),
+    ).toBeVisible()
   })
 
   test('receiving windows can only be chosen within the Fresh rules', async ({ page }) => {
@@ -143,7 +150,7 @@ test.describe('store manager', () => {
     await expect(page.getByRole('button', { name: 'Confirm for Saturday' })).toBeDisabled()
     await page.getByRole('button', { name: 'Keep draft for Monday' }).click()
     await expect(page.getByRole('heading', { name: 'Draft saved for next run' })).toBeVisible()
-    await expect(page.getByText('42 cases · 360 kg · 3.6 m³')).toBeVisible()
+    await expect(page.getByText('42 cases · 289.8 kg · 1.55 m³')).toBeVisible()
     await expect(page.getByText('Monday, 28 September')).toBeVisible()
   })
 
@@ -438,11 +445,11 @@ test.describe('store manager', () => {
     expect((await labels(from)).at(0)).toBe('5:30 AM')
     expect((await labels(to)).at(-1)).toBe('9:00 AM')
     await page.getByRole('button', { name: 'Add one carton' }).click()
-    await page.getByRole('button', { name: /Confirm 21 cartons order/ }).click()
+    await page.getByRole('button', { name: /Confirm 41 cartons order/ }).click()
     await expect(page.getByRole('heading', { name: 'Orders confirmed' })).toBeVisible()
     await expect(page.getByText('Your Style order is confirmed')).toBeVisible()
     await page.goto('/store-manager/orders')
-    await expect(page.getByText('21 cartons').first()).toBeVisible()
+    await expect(page.getByText('41 cartons').first()).toBeVisible()
     await page.goto('/store-manager/profile')
     await expect(page.getByText('Waypoint Style')).toBeVisible()
     await expect(page.getByText('mall only accepts deliveries')).toBeVisible()
@@ -527,7 +534,7 @@ test.describe('store manager', () => {
     await expect(dry.getByLabel('Cases', { exact: true })).toHaveValue('22')
     await expect(chilled.getByLabel('Cases', { exact: true })).toHaveValue('16')
     await page.getByRole('button', { name: 'Review 2 orders' }).click()
-    await expect(page.getByText('22 cases · 220 kg · 2.2 m³')).toBeVisible()
+    await expect(page.getByText('22 cases · 151.8 kg · 0.81 m³')).toBeVisible()
   })
 
   test('the profile lets the manager edit their contact details', async ({ page }) => {
@@ -609,7 +616,7 @@ test.describe('store manager', () => {
     await page.getByRole('button', { name: 'Save changes to ORD1083' }).click()
     await expect(page.getByText('Your 2 Tech orders are confirmed')).toBeVisible()
     await page.goto('/store-manager/orders')
-    await expect(page.getByRole('link', { name: /ORD1083/ })).toContainText('12 items')
+    await expect(page.getByRole('link', { name: /ORD1083/ })).toContainText('2 items')
   })
 
   test('an order the dispatcher already planned is tagged when it is changed or cancelled', async ({

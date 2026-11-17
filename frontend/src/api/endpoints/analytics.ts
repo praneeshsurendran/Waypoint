@@ -7,3 +7,7 @@ export function getAnalyticsDemandForecast(
 ): Promise<ApiResponse<'/analytics/demand-forecast', 'get'>> {
   return contractRequest('/analytics/demand-forecast', 'get', options ?? {})
 }
+
+export function getPlanPredictions() {
+  return contractRequest('/analytics/plan-predictions', 'get')
+}

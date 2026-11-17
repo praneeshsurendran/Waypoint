@@ -107,8 +107,8 @@ class _StopState:
     order_ids: list[int | str] = field(default_factory=list)
 
 
-def _service_minutes(outlet: PlannerOutlet) -> float:
-    return _SERVICE_MINUTES.get(outlet.dock_type, _SERVICE_MINUTES["default"])
+def service_minutes(dock_type: str) -> float:
+    return _SERVICE_MINUTES.get(dock_type, _SERVICE_MINUTES["default"])
 
 
 def _can_fit(
@@ -258,7 +258,7 @@ def _compute_etas(
         etas.append(cur_time)
         total_km += dist_km
         # Service time
-        cur_time += dt.timedelta(minutes=_service_minutes(outlet))
+        cur_time += dt.timedelta(minutes=service_minutes(outlet.dock_type))
         cur_lat, cur_lng = outlet.lat, outlet.lng
 
     # Return to depot
@@ -526,7 +526,7 @@ def _allocate(ctx: PlannerContext) -> PlannerPlan:
 
                 if ctx.policy != "s1" and ordered_outlet_ids:
                     return_time += dt.timedelta(
-                        minutes=_service_minutes(ctx.outlets[ordered_outlet_ids[-1]])
+                        minutes=service_minutes(ctx.outlets[ordered_outlet_ids[-1]].dock_type)
                     )
                 previous_return = return_time
 
@@ -594,7 +594,7 @@ def _reschedule(plan: PlannerPlan, ctx: PlannerContext) -> None:
                 stop.planned_eta = eta
             last = ctx.outlets[ids[-1]]
             returns = etas[-1] + dt.timedelta(
-                minutes=_service_minutes(last)
+                minutes=service_minutes(last.dock_type)
                 + travel_minutes(
                     road_distance_km(last.lat, last.lng, vehicle.lat, vehicle.lng, ctx.road_factor),
                     ctx.avg_speed_kmh,

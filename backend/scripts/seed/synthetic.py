@@ -1,7 +1,8 @@
-"""Independent synthetic examples. Never reads or redistributes competition CSVs."""
+"""Local reference bootstrap, with an independent synthetic fallback for tests."""
 
 import datetime as dt
 import os
+from pathlib import Path
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from waypoint_identity.infrastructure.db.accounts import User as IdentityUser
@@ -19,7 +20,15 @@ from app.infrastructure.db.models.user import User
 from app.infrastructure.db.models import reference as operation_reference
 
 
-def seed(identity, network, operations, password, day=None, sample_orders=True):
+def seed(
+    identity,
+    network,
+    operations,
+    password,
+    day=None,
+    sample_orders=True,
+    reference_data=None,
+):
     day = day or dt.date.fromisoformat(
         os.environ.get(
             "DEMO_DELIVERY_DATE", str(dt.date.today() + dt.timedelta(days=1))
@@ -28,75 +37,81 @@ def seed(identity, network, operations, password, day=None, sample_orders=True):
     while day.weekday() == 6:
         day += dt.timedelta(days=1)
     with network.begin() as db:
-        for code, lat, lng in [("Peliyagoda", 6.96, 79.90), ("Kandy", 7.29, 80.64)]:
-            if not db.get(Depot, code):
-                db.add(Depot(code=code, name=code, lat=lat, lng=lng))
-        db.flush()
-        for index in range(120):
-            key = f"SYN{index+1:03}"
-            if db.get(Outlet, key):
-                continue
-            depot = "Peliyagoda" if index % 2 == 0 else "Kandy"
-            lat, lng = (6.96, 79.90) if depot == "Peliyagoda" else (7.29, 80.64)
-            brand = "Fresh" if index < 80 else "Style" if index < 105 else "Tech"
-            db.add(
-                Outlet(
-                    outlet_id=key,
-                    name=f"Synthetic outlet {index+1}",
-                    brand=brand,
-                    district=f"Synthetic zone {index%12}",
-                    depot_code=depot,
-                    dock_type="street",
-                    parking_constraint="van_only" if index % 20 == 0 else "normal",
-                    van_only=index % 20 == 0,
-                    is_mall=False,
-                    window_open_time=dt.time(5 if brand == "Fresh" else 8),
-                    window_close_time=dt.time(8 if brand == "Fresh" else 17),
-                    lat=lat + (index % 10) * 0.001,
-                    lng=lng + (index % 8) * 0.001,
+        if reference_data is not None:
+            from challenge import import_reference
+
+            import_reference(db, Path(reference_data))
+        else:
+            for code, lat, lng in [("Peliyagoda", 6.96, 79.90), ("Kandy", 7.29, 80.64)]:
+                if not db.get(Depot, code):
+                    db.add(Depot(code=code, name=code, lat=lat, lng=lng))
+            db.flush()
+            for index in range(120):
+                key = f"SYN{index+1:03}"
+                if db.get(Outlet, key):
+                    continue
+                depot = "Peliyagoda" if index % 2 == 0 else "Kandy"
+                lat, lng = (6.96, 79.90) if depot == "Peliyagoda" else (7.29, 80.64)
+                brand = "Fresh" if index < 80 else "Style" if index < 105 else "Tech"
+                db.add(
+                    Outlet(
+                        outlet_id=key,
+                        name=f"Synthetic outlet {index+1}",
+                        brand=brand,
+                        district=f"Synthetic zone {index%12}",
+                        depot_code=depot,
+                        dock_type="street",
+                        parking_constraint="van_only" if index % 20 == 0 else "normal",
+                        van_only=index % 20 == 0,
+                        is_mall=False,
+                        window_open_time=dt.time(5 if brand == "Fresh" else 8),
+                        window_close_time=dt.time(8 if brand == "Fresh" else 17),
+                        lat=lat + (index % 10) * 0.001,
+                        lng=lng + (index % 8) * 0.001,
+                    )
                 )
-            )
-        for index in range(60):
-            key = f"SYNV{index+1:03}"
-            if db.get(Vehicle, key):
-                continue
-            reefer = index < 16
-            kind = "van" if 12 <= index < 16 or index >= 48 else "truck"
-            db.add(
-                Vehicle(
-                    vehicle_id=key,
-                    type=kind,
-                    temp="reefer" if reefer else "ambient",
-                    is_refrigerated=reefer,
-                    weight_cap_kg=1500 if kind == "van" else 5000,
-                    volume_cap_m3=8 if kind == "van" else 25,
-                    fuel_type="diesel",
-                    km_per_l=8,
-                    weekly_fuel_quota_l=450,
-                    depot_code="Peliyagoda" if index % 2 == 0 else "Kandy",
-                    status="available",
+            for index in range(60):
+                key = f"SYNV{index+1:03}"
+                if db.get(Vehicle, key):
+                    continue
+                reefer = index < 16
+                kind = "van" if 12 <= index < 16 or index >= 48 else "truck"
+                db.add(
+                    Vehicle(
+                        vehicle_id=key,
+                        type=kind,
+                        temp="reefer" if reefer else "ambient",
+                        is_refrigerated=reefer,
+                        weight_cap_kg=1500 if kind == "van" else 5000,
+                        volume_cap_m3=8 if kind == "van" else 25,
+                        fuel_type="diesel",
+                        km_per_l=8,
+                        weekly_fuel_quota_l=450,
+                        depot_code="Peliyagoda" if index % 2 == 0 else "Kandy",
+                        status="available",
+                    )
                 )
-            )
-        for offset in range(-7, 29):
-            value = day + dt.timedelta(days=offset)
-            if db.get(CalendarDay, value):
-                continue
-            iso = value.isocalendar()
-            db.add(
-                CalendarDay(
-                    date=value,
-                    dow=value.weekday(),
-                    dow_name=value.strftime("%a"),
-                    is_weekend=value.weekday() >= 5,
-                    iso_year=iso.year,
-                    iso_week=iso.week,
-                    is_payday=False,
-                    festival_ramp=0,
-                    is_holiday=False,
-                    monsoon=False,
-                    is_operating=value.weekday() != 6,
+            for offset in range(-7, 29):
+                value = day + dt.timedelta(days=offset)
+                if db.get(CalendarDay, value):
+                    continue
+                iso = value.isocalendar()
+                db.add(
+                    CalendarDay(
+                        date=value,
+                        dow=value.weekday(),
+                        dow_name=value.strftime("%a"),
+                        is_weekend=value.weekday() >= 5,
+                        iso_year=iso.year,
+                        iso_week=iso.week,
+                        is_payday=False,
+                        festival_ramp=0,
+                        is_holiday=False,
+                        monsoon=False,
+                        is_operating=value.weekday() != 6,
+                    )
                 )
-            )
+
     with network() as db:
         snapshots = {
             cls.__tablename__: [
@@ -105,6 +120,21 @@ def seed(identity, network, operations, password, day=None, sample_orders=True):
             ]
             for cls in (Depot, Outlet, Vehicle, CalendarDay)
         }
+    outlet_key, vehicle_key = "SYN001", "SYNV001"
+    if reference_data is not None:
+        outlet_key = "OUT001"
+        home = next(
+            row["depot_code"]
+            for row in snapshots["outlets"]
+            if row["outlet_id"] == outlet_key
+        )
+        vehicle_key = next(
+            row["vehicle_id"]
+            for row in snapshots["vehicles"]
+            if row["depot_code"] == home
+            and row["is_refrigerated"]
+            and row["type"] == "van"
+        )
     with identity.begin() as db:
         # Bootstrap only: event consumers maintain these validation projections thereafter.
         for name, cls, key in [
@@ -119,8 +149,8 @@ def seed(identity, network, operations, password, day=None, sample_orders=True):
         for username, role, links in [
             ("dispatcher", "DISPATCHER", {}),
             ("loader", "LOADER", {"depot_id": "Peliyagoda"}),
-            ("driver", "DRIVER", {"vehicle_id": "SYNV001", "depot_id": "Peliyagoda"}),
-            ("manager", "STORE_MANAGER", {"outlet_id": "SYN001"}),
+            ("driver", "DRIVER", {"vehicle_id": vehicle_key, "depot_id": "Peliyagoda"}),
+            ("manager", "STORE_MANAGER", {"outlet_id": outlet_key}),
             ("admin", "ADMIN", {}),
         ]:
             if db.scalar(select(IdentityUser).where(IdentityUser.username == username)):
@@ -171,18 +201,22 @@ def seed(identity, network, operations, password, day=None, sample_orders=True):
         if sample_orders:
             from app.infrastructure.db.models.order import Order
 
-            for index in range(120):
+            for index, outlet_record in enumerate(
+                sorted(snapshots["outlets"], key=lambda row: row["outlet_id"])
+            ):
                 reference = f"SYN-{day}-{index+1:03}"
                 if db.scalar(select(Order).where(Order.reference == reference)):
                     continue
-                key = f"SYN{index+1:03}"
-                brand = "Fresh" if index < 80 else "Style" if index < 105 else "Tech"
+                key = outlet_record["outlet_id"]
+                brand = outlet_record["brand"]
                 db.add(
                     Order(
                         reference=reference,
                         outlet_id=key,
                         brand=brand,
-                        temperature_class="CHILLED" if index < 40 else "AMBIENT",
+                        temperature_class="CHILLED"
+                        if brand == "Fresh" and index % 2 == 0
+                        else "AMBIENT",
                         delivery_date=day,
                         status="PLACED",
                         total_cases=20,
@@ -208,7 +242,20 @@ def main():
         )
     identity_events(factories[0])
     network_events(factories[1])
-    print(seed(*factories, password=os.environ["DEMO_PASSWORD"]))
+    root = Path(
+        os.getenv("CHALLENGE_DATA_ROOT", "/opt/waypoint/private/intelligence/data")
+    )
+    use_shared = (
+        os.getenv("SEED_DATA_MODE", "auto") != "synthetic"
+        and (root / "General Data" / "outlets.csv").exists()
+    )
+    print(
+        seed(
+            *factories,
+            password=os.environ["DEMO_PASSWORD"],
+            reference_data=root if use_shared else None,
+        )
+    )
 
 
 if __name__ == "__main__":

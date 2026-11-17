@@ -8,6 +8,7 @@ from app.main import create_app as operations_app
 from waypoint_identity.main import create_app as identity_app
 from waypoint_network.main import create_app as network_app
 from waypoint_notifications.main import create_app as notifications_app
+from waypoint_intelligence.main import create_app as intelligence_app
 
 os.environ["SERVICE_MODE"] = "operations"
 get_settings.cache_clear()
@@ -17,6 +18,7 @@ APPS = {
     "network-fleet": network_app(),
     "operations": operations_app(),
     "notifications": notifications_app(),
+    "intelligence": intelligence_app(),
 }
 rows = [
     "# API compatibility and ownership",
@@ -113,4 +115,4 @@ for owner, app in APPS.items():
             )
 assert len(rows) > 59, "Route ownership export is incomplete"
 (ROOT / "docs/api-compatibility.md").write_text("\n".join(rows) + "\n")
-print("Exported four service OpenAPI contracts and route ownership")
+print("Exported five service OpenAPI contracts and route ownership")

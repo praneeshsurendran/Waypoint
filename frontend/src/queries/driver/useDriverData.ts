@@ -1,3 +1,4 @@
+import { getToken } from '@/infrastructure/storage/authSession'
 import { useApiQuery } from '@/queries/useApiQuery'
 import { driverDepartureErrors, nextDriverStop } from '@/utils/driverWorkflow'
 import { useOperations } from '@/queries/useOperations'
@@ -52,13 +53,22 @@ export function useDriverData() {
     session,
     online: connected,
     syncError,
-    departureErrors: query.data?.route
-      ? query.data.route.stops.length === 0
-        ? ['No open deliveries are assigned to this truck.']
-        : []
-      : snapshot.data
+    departureErrors:
+      snapshot.data && !getToken()
         ? driverDepartureErrors(snapshot.data)
-        : [],
+        : query.data
+          ? [
+              ...(!query.data.load?.released
+                ? ['Dispatcher must release this assigned truck.']
+                : []),
+              ...(!query.data.load?.completed
+                ? ['Loader must complete loading and safety checks.']
+                : []),
+              ...(query.data.route.stops.length === 0
+                ? ['No open deliveries are assigned to this truck.']
+                : []),
+            ]
+          : ['Waiting for the saved route and loading clearance.'],
   }
 }
 

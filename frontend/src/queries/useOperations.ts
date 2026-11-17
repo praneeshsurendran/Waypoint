@@ -7,7 +7,7 @@ import { useServices } from '@/app/providers/ServicesContext'
 import { useApis } from '@/app/providers/ApisContext'
 
 import { getToken, getUser } from '@/infrastructure/storage/authSession'
-import type { Snapshot, Stop } from '@/types/models'
+import type { Snapshot } from '@/types/models'
 import type { Apis } from '@/types/api'
 import type { OperationsService } from '@/services/OperationsService'
 
@@ -51,40 +51,20 @@ async function getLiveSnapshot(apis: Apis, services: OperationsService): Promise
     const roleUpper = (user?.role || '').toUpperCase()
     const canAccessPlanning = !user || roleUpper === 'DISPATCHER' || roleUpper === 'ADMIN'
 
-    const [planState, vehicles, loads, route] = await Promise.all([
+    const [planState, vehicles, loads, route, deliveryStops] = await Promise.all([
       canAccessPlanning ? apis.planning.getPlan().catch(() => null) : Promise.resolve(null),
       apis.fleet.listVehicles().catch(() => []),
       apis.loading.listLoads().catch(() => []),
       // Only a driver has a route; whether it has started switches on location updates and deadline alerts.
       roleUpper === 'DRIVER' ? apis.delivery.getRoute().catch(() => null) : Promise.resolve(null),
+      canAccessPlanning ? apis.delivery.listStops().catch(() => []) : Promise.resolve([]),
     ])
 
     // Roles without planning access still learn from the server whether intake is closed and the plan published.
     const intake = planState ? null : await apis.orders.getIntakeStatus().catch(() => null)
 
-    const stops: Stop[] = []
-    if (loads && loads.length > 0) {
-      for (const load of loads) {
-        for (const item of load.items) {
-          stops.push({
-            id: `${load.id}-${item.stop}`,
-            loadId: load.id,
-            outlet: item.outlet,
-            name: item.name,
-            address: item.district ?? '',
-            window: item.window ?? '',
-            eta: item.eta ?? load.departureTime ?? '',
-            lat: item.lat ?? 0,
-            lng: item.lng ?? 0,
-            orderIds: planState
-              ? planState.orders.filter((o) => o.outlet === item.outlet).map((o) => o.id)
-              : [],
-            cases: item.expected,
-            status: load.completed ? 'Delivered' : 'Upcoming',
-          })
-        }
-      }
-    }
+    // Loading completion is warehouse state; delivery state comes from the delivery API.
+    const stops = route?.stops ?? deliveryStops
 
     return {
       ...clean,
@@ -188,4 +168,10 @@ export function useEvidence(id?: string) {
     error: isDirectUrl ? null : query.error,
     refetch: query.refetch,
   }
+}
+
+/** Refresh guards before navigating to a newly created entity. */
+export function useInvalidateOperations() {
+  const client = useQueryClient()
+  return () => client.invalidateQueries({ queryKey: snapshotKey })
 }

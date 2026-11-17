@@ -134,6 +134,8 @@ export async function signManagerHandoff(
   remarks = 'All cases unloaded, checked and received in good condition.',
 ) {
   const fallback = page.getByRole('button', { name: 'Manager signs on this device' })
+  // Wait for the hydrated route before choosing the on-device handoff.
+  await expect(fallback.or(page.getByLabel('Store Manager name', { exact: true }))).toBeVisible()
   if (await fallback.isVisible()) await fallback.click()
   await page.getByLabel('Store Manager name', { exact: true }).fill('Nimal Perera')
   await page.getByLabel('Store Manager remarks', { exact: true }).fill(remarks)

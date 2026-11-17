@@ -15,3 +15,13 @@ dist/
 *.tsbuildinfo
 backend/.env.*.local
 backend/backups/
+
+# Private competition datasets, derived models, and experiment output.
+backend/private/
+backend/intelligence/artifacts/
+backend/intelligence/reports/
+backend/intelligence/runs/
+backend/intelligence/checkpoints/
+backend/intelligence/submissions/
+backend/intelligence/progress.log
+backend/intelligence/provenance.json

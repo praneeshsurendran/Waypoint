@@ -6,7 +6,7 @@ import type { ApiAuditRow } from '@/types/api/responses'
 import type { TeamApi } from '@/types/api/team'
 import type { AuditEntry, MemberActivity, TeamMember, Workspace } from '@/types/models'
 
-import { getUser } from '@/infrastructure/storage/authSession'
+import { getUser, setUser } from '@/infrastructure/storage/authSession'
 
 import type { ApiOutlet } from '@/types/api/reference'
 
@@ -42,10 +42,13 @@ export const auditTitles: Record<string, string> = {
   PASSWORD_RESET: 'Temporary password set',
   OUTLET_CREATED: 'Outlet added',
   VEHICLE_CREATED: 'Vehicle added',
+  ACCOUNT_CHANGE_REQUEST: 'Assignment change requested',
 }
 
 export function auditDetail(row: ApiAuditRow): string {
   const after = row.after ?? {}
+  if (row.action === 'ACCOUNT_CHANGE_REQUEST' && typeof after.detail === 'string')
+    return after.detail
   const who = typeof after.username === 'string' ? after.username : ''
   const what = typeof after.name === 'string' ? after.name : ''
   const label = `${row.entity_type} ${row.entity_id}`
@@ -182,12 +185,16 @@ export function createHttpTeamApi(): TeamApi {
     },
     updateContact: (memberId, contact) => {
       const body = { full_name: contact.name, email: contact.email, phone: contact.mobile || null }
-      // People change their own details; an administrator changes anyone's.
-      return getUser()?.role === 'ADMIN'
-        ? patch(memberId, body)
-        : authApi.patchAuthMe({ method: 'PATCH', body: body }).then(() => undefined)
+      const user = getUser()
+      if (String(user?.id) === memberId) return authApi.patchAuthMe({ body }).then(setUser)
+      if (user?.role === 'ADMIN') return patch(memberId, body)
+      return Promise.reject(new Error('This saved profile change belongs to another account.'))
     },
-    requestAccountChange: unsupported('Account change requests'),
+    requestAccountChange: (memberId, detail) => {
+      if (String(getUser()?.id) !== memberId)
+        return Promise.reject(new Error('Request changes for your own account.'))
+      return authApi.requestAccountChange({ body: { detail } }).then(() => undefined)
+    },
     async changeAssignment(memberId, depot, assignment) {
       const people = await users()
       const person = people.find((u) => String(u.id) === memberId)
@@ -208,6 +215,14 @@ export function createHttpTeamApi(): TeamApi {
         })
         .then(() => undefined),
     updateRole: (memberId, role) => patch(memberId, { role: apiRoleOf[role] }),
-    suspend: (memberId, _scheduled, reason) => patch(memberId, { is_active: false, reason }),
+    suspend: (memberId, scheduled, reason) => {
+      if (scheduled)
+        return Promise.reject(
+          new Error(
+            'Scheduled suspension is unavailable. Reassign the trip or suspend with a reason.',
+          ),
+        )
+      return patch(memberId, { is_active: false, reason })
+    },
   }
 }

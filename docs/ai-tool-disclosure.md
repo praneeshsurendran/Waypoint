@@ -26,3 +26,13 @@ The team made the architectural decisions and every other decision without AI as
    for another one.
 
 The assistant was a tool in the development process. The team owns the design and the resulting code.
+
+## November 2026 audit and Datathon integration update
+
+Codex assisted with this repository audit, requirements reconciliation, copying and adapting
+Datathon code, the compact Task 1 candidate, separate inference API, UI/profile fixes, tests,
+notebook source, and architecture/deployment documentation. It ran the local validation commands
+reported in the current verification document. The earlier statement that every architecture,
+review and testing decision was made without AI does not describe this later work. The team
+must review these changes and supply accurate authorship/history for its original modelling,
+designs and submission videos; those activities are not inferred here.

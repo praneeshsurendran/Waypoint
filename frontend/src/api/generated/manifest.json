@@ -32,10 +32,21 @@
   },
   {
     "owner": "identity",
+    "path": "/auth/account-change-requests",
+    "method": "post",
+    "responses": {
+      "201": "v4"
+    },
+    "parameters": [],
+    "request": "v5",
+    "bodyRequired": true
+  },
+  {
+    "owner": "identity",
     "path": "/admin/users",
     "method": "get",
     "responses": {
-      "200": "v4"
+      "200": "v6"
     },
     "parameters": []
   },
@@ -44,10 +55,10 @@
     "path": "/admin/users",
     "method": "post",
     "responses": {
-      "201": "v5"
+      "201": "v7"
     },
     "parameters": [],
-    "request": "v6",
+    "request": "v8",
     "bodyRequired": true
   },
   {
@@ -55,7 +66,7 @@
     "path": "/admin/users/{user_id}",
     "method": "patch",
     "responses": {
-      "200": "v5"
+      "200": "v7"
     },
     "parameters": [
       {
@@ -68,7 +79,7 @@
         }
       }
     ],
-    "request": "v7",
+    "request": "v9",
     "bodyRequired": true
   },
   {
@@ -89,7 +100,7 @@
         }
       }
     ],
-    "request": "v8",
+    "request": "v10",
     "bodyRequired": true
   },
   {
@@ -110,7 +121,7 @@
         }
       }
     ],
-    "request": "v9",
+    "request": "v11",
     "bodyRequired": true
   },
   {
@@ -118,7 +129,7 @@
     "path": "/reference/store-managers",
     "method": "get",
     "responses": {
-      "200": "v10"
+      "200": "v12"
     },
     "parameters": []
   },
@@ -127,7 +138,7 @@
     "path": "/health/live",
     "method": "get",
     "responses": {
-      "200": "v11"
+      "200": "v13"
     },
     "parameters": []
   },
@@ -136,7 +147,7 @@
     "path": "/health/ready",
     "method": "get",
     "responses": {
-      "200": "v12"
+      "200": "v14"
     },
     "parameters": []
   },
@@ -1438,17 +1449,77 @@
     "responses": {
       "200": "v44"
     },
-    "parameters": []
+    "parameters": [
+      {
+        "name": "authorization",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Authorization"
+        }
+      }
+    ]
+  },
+  {
+    "owner": "operations",
+    "path": "/analytics/plan-predictions",
+    "method": "get",
+    "responses": {
+      "200": "v45"
+    },
+    "parameters": [
+      {
+        "name": "plan_id",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Plan Id"
+        }
+      },
+      {
+        "name": "authorization",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Authorization"
+        }
+      }
+    ]
   },
   {
     "owner": "operations",
     "path": "/planning/jobs",
     "method": "post",
     "responses": {
-      "202": "v45"
+      "202": "v46"
     },
     "parameters": [],
-    "request": "v46",
+    "request": "v47",
     "bodyRequired": true
   },
   {
@@ -1456,7 +1527,7 @@
     "path": "/planning/jobs/{job_id}",
     "method": "get",
     "responses": {
-      "200": "v47"
+      "200": "v48"
     },
     "parameters": [
       {
@@ -1475,7 +1546,7 @@
     "path": "/planning/jobs/{job_id}/cancel",
     "method": "post",
     "responses": {
-      "200": "v45"
+      "200": "v46"
     },
     "parameters": [
       {
@@ -1513,7 +1584,7 @@
     "path": "/evidence/{key}/download-url",
     "method": "get",
     "responses": {
-      "200": "v48"
+      "200": "v49"
     },
     "parameters": [
       {
@@ -1601,6 +1672,55 @@
     "method": "get",
     "responses": {
       "200": "v3"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "intelligence",
+    "path": "/health/live",
+    "method": "get",
+    "responses": {
+      "200": "v0"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "intelligence",
+    "path": "/health/ready",
+    "method": "get",
+    "responses": {
+      "200": "v1"
+    },
+    "parameters": []
+  },
+  {
+    "owner": "intelligence",
+    "path": "/intelligence/predictions",
+    "method": "post",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [],
+    "request": "v3",
+    "bodyRequired": true
+  },
+  {
+    "owner": "intelligence",
+    "path": "/intelligence/planned-predictions",
+    "method": "post",
+    "responses": {
+      "200": "v2"
+    },
+    "parameters": [],
+    "request": "v4",
+    "bodyRequired": true
+  },
+  {
+    "owner": "intelligence",
+    "path": "/intelligence/forecast",
+    "method": "get",
+    "responses": {
+      "200": "v5"
     },
     "parameters": []
   }

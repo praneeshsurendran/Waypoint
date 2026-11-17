@@ -15,6 +15,9 @@ backend/
     network-fleet/       # outlets, depots, fleet, calendar, availability
     operations/          # orders, planning, loading, delivery, receipts, analytics
     notifications/       # inbox, scoped notices, read receipts
+    intelligence/        # stateless, separately deployable saved-model inference
+  intelligence/          # copied training, export, allocation and validation code
+  private/intelligence/  # gitignored authorized datasets/artifacts; restore separately
   packages/              # contracts, security, observability, messaging, runtime
   tests/                 # contract, e2e, resilience, performance
   scripts/               # seed, migrate, verify
@@ -23,7 +26,7 @@ backend/
   docker-compose.yml
 ```
 
-Each service contains its Dockerfile, pinned project metadata, migration history, source
+Each database-owning service contains its Dockerfile, pinned project metadata, migration history, source
 package and preserved/added tests. Operations retains its original `alembic/` history;
 new owner histories live under `migrations/`. No empty placeholder service directories exist.
 
@@ -39,8 +42,10 @@ docker compose --env-file backend/.env up --build
 Frontend: `http://localhost:5173`; API ingress: `http://localhost:8000/api/v1`.
 Synthetic logins: `dispatcher`, `loader`, `driver`, `manager`, `admin`; password is
 `DEMO_PASSWORD` from the local environment. No challenge CSV files are copied into images.
-Seeding is idempotent and never resets existing rows or passwords. It creates 120 independently
-generated outlets, 60 vehicles, calendar rows and representative orders.
+Seeding is idempotent and never resets existing rows or passwords. With the private authorized
+workspace it imports the challenge’s 120 outlet and 60 vehicle references; otherwise it uses
+independent synthetic fixtures. The inference service requires the private workspace and verified
+artifacts: see [Intelligence integration](intelligence/README.md).
 
 Each context has a one-shot migration container. API replicas never run migrations at
 startup. Do not delete Docker volumes to upgrade or reseed. Existing legacy volumes need
@@ -55,12 +60,12 @@ Nginx is a local substitute for API Gateway/ALB path routing, not an application
 
 ## Native validation
 
-Use Python 3.12+ (validated with Python 3.13) and PostgreSQL 15+.
+Use Python 3.13 and PostgreSQL 15+ for the complete backend and intelligence toolchain.
 
 ```sh
 python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements-dev.lock
-export PYTHONPATH="$PWD/backend/services/operations/src:$PWD/backend/services/identity-access/src:$PWD/backend/services/network-fleet/src:$PWD/backend/services/notifications/src:$PWD/backend/packages/contracts:$PWD/backend/packages/security:$PWD/backend/packages/observability:$PWD/backend/packages/messaging:$PWD/backend/packages/runtime"
+export PYTHONPATH="$PWD/backend/intelligence:$PWD/backend/services/intelligence/src:$PWD/backend/services/operations/src:$PWD/backend/services/identity-access/src:$PWD/backend/services/network-fleet/src:$PWD/backend/services/notifications/src:$PWD/backend/packages/contracts:$PWD/backend/packages/security:$PWD/backend/packages/observability:$PWD/backend/packages/messaging:$PWD/backend/packages/runtime"
 export DATABASE_URL='postgresql+psycopg://TEST_USER:TEST_PASSWORD@localhost:5432/waypoint_operations_test'
 export TEST_DATABASE_URL="$DATABASE_URL"
 export JWT_SECRET='local-test-only-secret-with-at-least-32-characters'
@@ -89,7 +94,7 @@ docker compose config --quiet
 cd frontend && npm run typecheck && npm run lint && npm test && npm run check:architecture && npm run build
 ```
 
-All deployed services have `Dockerfile`, `pyproject.toml`, their own Alembic history,
+Database-owning services have `Dockerfile`, `pyproject.toml`, their own Alembic history,
 `src/<package>/main.py`, transport routers, use cases, persistence and tests. The operations
 package retains the `app` import namespace for existing deployment/test compatibility.
 Shared packages contain API/event DTOs, identity verification, request tracing and AWS

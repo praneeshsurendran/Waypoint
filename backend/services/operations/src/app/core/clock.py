@@ -27,7 +27,7 @@ def now() -> dt.datetime:
         delivery = _parse_date(settings.demo_delivery_date)
         base = delivery - dt.timedelta(days=1)
     # Use actual wall-clock time-of-day but override the date
-    wall = dt.datetime.now(tz)
+    wall = settings.demo_time or dt.datetime.now(tz).time()
     return dt.datetime(
         base.year, base.month, base.day, wall.hour, wall.minute, wall.second, tzinfo=tz
     )

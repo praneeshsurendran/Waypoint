@@ -1,3 +1,6 @@
+Current full-project evidence: [November 17 verification](../../docs/challenge-verification.md) and
+[validation results](../../docs/validation-2026-11-17.json). The results below are historical.
+
 # Executed validation — 2026-11-12
 
 The implementation was validated with Python 3.13, native PostgreSQL 15, Node 22.23.3,

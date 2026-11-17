@@ -1,4 +1,4 @@
-/* Generated from operations-v1.json (1985567c7c578e5e094a7c99c158065dee2fd34321aa19eb66cb1ba610aafaec). Do not edit. */
+/* Generated from operations-v1.json (8a795b09691de9d62d41d7d4dacdf40b1458706838c3271744e419c11b46d68b). Do not edit. */
 export const v0: (data: unknown) => boolean;
 export const v1: (data: unknown) => boolean;
 export const v2: (data: unknown) => boolean;
@@ -48,3 +48,4 @@ export const v45: (data: unknown) => boolean;
 export const v46: (data: unknown) => boolean;
 export const v47: (data: unknown) => boolean;
 export const v48: (data: unknown) => boolean;
+export const v49: (data: unknown) => boolean;

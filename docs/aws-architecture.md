@@ -6,12 +6,44 @@ The original [proposed architecture](waypoint_aws_architecture.md) is retained
 unchanged. This document records what is implemented and what the deployment owner must
 configure and validate.
 
+## Account created on/after July 15, 2025: budget reconciliation
+
+The owner confirmed this account category. AWS's [Free Tier FAQ](https://aws.amazon.com/free/free-tier-faqs/)
+and [new-plan announcement](https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan/)
+describe a six-month free plan and promotional credits, subject to eligibility, service availability
+and remaining credit. This is not an indefinitely free entitlement to run this architecture.
+Check the account's actual plan, signup date, remaining credits, regional instance eligibility and
+service restrictions in Billing before deployment. A newer account may already have exhausted
+its free-plan period. No account state or live AWS deployment was inspected here.
+
+The multi-AZ Fargate/ALB/API Gateway/WAF/RDS/NAT topology below is the production-scale
+reference, **not** the free-tier starting recommendation. For a small evaluation, preserve the
+five service/process boundaries but co-locate processes on one eligible compute host, with one
+PostgreSQL instance holding four separately secured owner databases and an authenticated Redis
+instance. Serve the built static PWA separately; use managed SQS/EventBridge and private S3
+within the account's supported services and budget. Inference is a separate CPU process/image,
+loads each verified artifact once and needs no GPU, notebook server or online training.
+A local idle snapshot measured about 1,213 MiB for the APIs/workers, PostgreSQL and Redis,
+excluding LocalStack and the development frontend server; this is not a peak or AWS host measurement.
+Do not assume a 1 GB instance can hold PostgreSQL, Redis, five Python APIs and all workers:
+measure memory/CPU and concurrent inference first. Scale down idle evaluation workloads or use
+a larger credit-funded instance when necessary; neither option establishes free ongoing hosting.
+
+This small deployment has a single failure domain and is not highly available. Production still
+requires TLS between application processes and database connections, restricted access, private
+evidence, backups with tested restores, operational monitoring and a documented recovery target.
+The deployment owner handles those resources and workflows separately. No Terraform, Ansible,
+CI/CD, provisioning scripts or live resources are added by this work. Budget alarms and checking
+bills are deployment acceptance criteria; do not label the deployment "zero cost" without actual
+account measurements. The [EC2 eligibility reference](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-free-tier-usage.html)
+distinguishes the newer account benefits from legacy micro-instance allowances.
+
 ## Decisions and regional verification
 
-Use ECS Fargate for the four APIs and independent publisher/consumer/planning tasks. The
+For the larger production reference, use ECS Fargate for the five APIs and independent publisher/consumer/planning tasks. The
 repository has no Kubernetes-specific dependency justifying EKS. Use separate ECR images
 for identity-access, network-fleet, operations and notifications; planning reuses the operations
-image. Start with one RDS PostgreSQL instance hosting four separately secured databases.
+image. Intelligence uses its own CPU image without a database. Start with one RDS PostgreSQL instance hosting four separately secured databases.
 Orders/planning/loading/delivery are intentionally combined as described in the ADR.
 
 The candidate region is ap-south-1 (Mumbai), subject to measured Sri Lanka latency, account
@@ -65,6 +97,7 @@ EventBridge, SQS, S3 and CloudWatch are regional managed services, not container
 | `/api/v1/auth/*`, `/api/v1/admin/users*`, `/api/v1/reference/store-managers` | identity-access |
 | `/api/v1/reference/*`, exact `/api/v1/admin/outlets`, exact `/api/v1/admin/vehicles` | network-fleet |
 | `/api/v1/notifications*` | notifications |
+| `/api/v1/intelligence/*` | intelligence (verified models, no database) |
 | `/api/v1/orders*`, `/plans*`, `/planning/jobs*`, `/loading*`, `/driver*`, `/deferrals*`, `/analytics*`, remaining `/admin*`, `/uploads/*`, `/api/v1/evidence/*` | operations |
 
 All abbreviated patterns above retain `/api/v1`. Put exact/most-specific matches before

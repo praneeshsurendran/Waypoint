@@ -109,7 +109,7 @@ test('the root opens the welcome page and leads to sign-in and workspaces', asyn
   await expect(page).toHaveURL(/\/welcome$/)
   await page.getByRole('link', { name: 'Log in' }).click()
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('Incorrect email or password')
+  await expect(page.getByRole('alert')).toContainText('Please enter your username and password.')
   await page.getByLabel('Email or employee ID').fill('nimal@example.test')
   await page.getByLabel('Password').fill('demo-password')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()

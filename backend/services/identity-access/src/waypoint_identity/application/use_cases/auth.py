@@ -82,3 +82,17 @@ def update_me(body: ContactUpdate, current_user: CurrentUser, db: DbDep) -> User
     return TypeAdapter(UserProfile).validate_python(
         UserProfile.model_validate(current_user)
     )
+
+
+def request_account_change(detail: str, current_user: CurrentUser, db: DbDep) -> None:
+    from waypoint_identity.infrastructure.db.audit import log_action
+
+    log_action(
+        db,
+        "ACCOUNT_CHANGE_REQUEST",
+        "account_request",
+        current_user.id,
+        current_user.id,
+        after={"detail": detail.strip(), "status": "pending"},
+    )
+    db.commit()

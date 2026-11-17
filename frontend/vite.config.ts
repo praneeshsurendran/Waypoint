@@ -49,6 +49,8 @@ export default defineConfig({
         })),
       },
       workbox: {
+        // Claim the first online visit after precaching; keep updates behind the existing prompt.
+        clientsClaim: true,
         importScripts: ['/delivery-notifications.js'],
         globPatterns: ['**/*.{js,css,html,json,svg,png,jpg,webp,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

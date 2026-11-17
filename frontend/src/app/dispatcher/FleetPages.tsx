@@ -51,8 +51,7 @@ export function FleetPage({ tracking = false }: { tracking?: boolean }) {
       `${v.id} ${v.location} ${v.brand}`.toLowerCase().includes(search.toLowerCase()) &&
       (status === 'All' || v.status === status),
   )
-  const selectedId =
-    selected ?? (tracking ? (data.vehicles.find((v) => v.status === 'En route')?.id ?? null) : null)
+  const selectedId = selected
   const vehicle = data.vehicles.find((v) => v.id === selectedId)
   const vehicleOrder = data.orders
     .filter((o) => o.vehicleId === vehicle?.id)

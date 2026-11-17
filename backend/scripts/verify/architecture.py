@@ -9,6 +9,7 @@ PACKAGES = {
     "identity-access": "waypoint_identity",
     "network-fleet": "waypoint_network",
     "notifications": "waypoint_notifications",
+    "intelligence": "waypoint_intelligence",
 }
 errors = []
 for service, package in PACKAGES.items():

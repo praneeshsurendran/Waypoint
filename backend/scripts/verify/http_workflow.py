@@ -40,6 +40,7 @@ def main():
             )["access_token"]
             headers[name] = {"Authorization": "Bearer " + token}
         request("GET", "/health/ready")
+        outlet_id = request("GET", "/api/v1/auth/me", headers["manager"])["outlet_id"]
         # Use an unseeded future operating day, retaining all existing synthetic example orders.
         intake = request("GET", "/api/v1/orders/intake-status", headers["manager"])
         day = dt.date.fromisoformat(intake["next_delivery_date"]) + dt.timedelta(days=1)
@@ -55,7 +56,7 @@ def main():
             headers["manager"],
             expected=201,
             json={
-                "outlet_id": "SYN001",
+                "outlet_id": outlet_id,
                 "temperature_class": "CHILLED",
                 "delivery_date": str(day),
                 "cases": 5,
@@ -89,9 +90,9 @@ def main():
         trip = next(
             t
             for t in plan["trips"]
-            if any(s["outlet_id"] == "SYN001" for s in t["stops"])
+            if any(s["outlet_id"] == outlet_id for s in t["stops"])
         )
-        stop = next(s for s in trip["stops"] if s["outlet_id"] == "SYN001")
+        stop = next(s for s in trip["stops"] if s["outlet_id"] == outlet_id)
         users = request("GET", "/api/v1/admin/users", headers["admin"])
         driver = next(u for u in users if u["username"] == "driver")
         request(

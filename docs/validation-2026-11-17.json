@@ -1,0 +1,326 @@
+{
+  "date": "2026-11-17",
+  "scope": "Local application acceptance; no live AWS, infrastructure-as-code, CI/CD or publication",
+  "environment": {
+    "python": "3.13",
+    "node": "22.23.3",
+    "database": "PostgreSQL 15 native tests / PostgreSQL 16 Docker",
+    "aws_emulator": "LocalStack 3.8.1",
+    "redis": "7.4",
+    "browser": "installed Chromium 156"
+  },
+  "backend": {
+    "passed": 129,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 80.5,
+    "warnings": [
+      "Starlette TestClient httpx deprecation; application runtime requests still pass"
+    ]
+  },
+  "frontend": {
+    "passed": 136,
+    "files": 17,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browser_feature_suite": {
+    "passed": 99,
+    "failed": 0,
+    "skipped": 0,
+    "minutes": 4.7,
+    "adapter": "local demo; includes real browser offline/refresh, photos, signatures, receipt and route revision",
+    "workers": 3,
+    "viewports": [
+      360,
+      390,
+      834,
+      1440
+    ]
+  },
+  "real_browser_roles": {
+    "browser_role_logins": [
+      {
+        "role": "dispatcher",
+        "path": "/dispatcher/orders",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "loader",
+        "path": "/loader/queue",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "driver",
+        "path": "/driver/home",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "manager",
+        "path": "/store-manager/overview",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      },
+      {
+        "role": "admin",
+        "path": "/administration/team",
+        "uncaught_errors": 0,
+        "api_errors": 0
+      }
+    ]
+  },
+  "real_browser_inference": {
+    "real_dispatcher_plan_predictions": 71,
+    "learned_forecast_ui": "passed",
+    "javascript_errors": 0
+  },
+  "http_workflow": {
+    "four_role_http_workflow": "passed",
+    "async_job": "succeeded",
+    "queue_completion_seconds": 3.154,
+    "duplicate_replay": "deduplicated",
+    "private_evidence": "authorized",
+    "notifications": 3,
+    "order_id": 122,
+    "plan_id": 2
+  },
+  "http_inference": {
+    "model_version": "c8277fcbe16a5e78",
+    "known_id_predictions": 3,
+    "forecast_rows": 60,
+    "live_plan_predictions": 1,
+    "unauthenticated": "denied"
+  },
+  "checks": {
+    "frontend_build": "passed; no chunk-size warning",
+    "frontend_typecheck": "passed",
+    "frontend_eslint": "passed",
+    "frontend_architecture": "passed; 327 production modules",
+    "frontend_architecture_tests": "6 passed",
+    "api_contracts": "five services; 86 operations; generation/check passed",
+    "backend_ruff": "passed",
+    "backend_ruff_format": "233 files already formatted",
+    "backend_mypy": "passed; 159 source files",
+    "backend_architecture": "passed",
+    "compileall": "passed",
+    "docker_build_and_startup": "passed; four owned DB migrations, seed, APIs, workers, ingress and inference",
+    "owner_migrations": "all four histories applied twice to isolated test databases; idempotent recorded heads",
+    "local_aws": "EventBridge/SQS fan-out, DLQ redrive/replay and private S3 roundtrip passed",
+    "bandit": "no medium/high findings in services/packages",
+    "frontend_dependency_audit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "backend_dependency_audit": {
+      "dependencies_checked": 51,
+      "known_vulnerabilities": 0,
+      "scope": "pinned API and ML runtime locks; --no-deps --disable-pip; scanner recommends hash-locked installs"
+    }
+  },
+  "datathon": {
+    "task1_rows": 5014,
+    "task2a_rows": 60,
+    "task2b_rows": 85,
+    "template_validation": "passed; includes fresh-process prediction reproduction",
+    "notebook": "every cell executed successfully; source outputs empty, executed copy private",
+    "allocation_policy": "generated privately from checked export; per-trip calculations saved",
+    "artifact_version": "c8277fcbe16a5e78",
+    "original_folder_dependency": "none at runtime; required files copied into backend; explicit offline importer accepts a source path"
+  },
+  "resource_snapshot": {
+    "containers": [
+      {
+        "name": "waypoint-nov17-operations-publisher-1",
+        "memory": "82.31MiB / 7.75GiB",
+        "cpu": "0.24%"
+      },
+      {
+        "name": "waypoint-nov17-planning-worker-1",
+        "memory": "82.95MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-operations-consumer-1",
+        "memory": "83.25MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-network-publisher-1",
+        "memory": "83.21MiB / 7.75GiB",
+        "cpu": "0.25%"
+      },
+      {
+        "name": "waypoint-nov17-notifications-consumer-1",
+        "memory": "82MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-intelligence-1",
+        "memory": "174.8MiB / 7.75GiB",
+        "cpu": "13.03%"
+      },
+      {
+        "name": "waypoint-nov17-identity-publisher-1",
+        "memory": "81.09MiB / 7.75GiB",
+        "cpu": "0.22%"
+      },
+      {
+        "name": "waypoint-nov17-identity-consumer-1",
+        "memory": "79.66MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-operations-1",
+        "memory": "95.67MiB / 7.75GiB",
+        "cpu": "0.21%"
+      },
+      {
+        "name": "waypoint-nov17-notifications-1",
+        "memory": "81.51MiB / 7.75GiB",
+        "cpu": "0.18%"
+      },
+      {
+        "name": "waypoint-nov17-identity-1",
+        "memory": "91.98MiB / 7.75GiB",
+        "cpu": "0.15%"
+      },
+      {
+        "name": "waypoint-nov17-network-1",
+        "memory": "91.38MiB / 7.75GiB",
+        "cpu": "0.15%"
+      },
+      {
+        "name": "waypoint-nov17-frontend-1",
+        "memory": "979.5MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-ingress-1",
+        "memory": "9.656MiB / 7.75GiB",
+        "cpu": "0.00%"
+      },
+      {
+        "name": "waypoint-nov17-db-1",
+        "memory": "81.94MiB / 7.75GiB",
+        "cpu": "0.22%"
+      },
+      {
+        "name": "waypoint-nov17-localstack-1",
+        "memory": "506.6MiB / 7.75GiB",
+        "cpu": "0.18%"
+      },
+      {
+        "name": "waypoint-nov17-redis-1",
+        "memory": "11.12MiB / 7.75GiB",
+        "cpu": "0.59%"
+      }
+    ],
+    "idle_mib_excluding_localstack_and_dev_frontend": 1212.526,
+    "measurement_limit": "Docker Desktop idle snapshot, not peak load or an AWS instance benchmark"
+  },
+  "frontend_bundle": {
+    "initial_index_kb": 283.73,
+    "initial_index_gzip_kb": 85.77,
+    "largest_chunk_kb": 398.87,
+    "largest_chunk_gzip_kb": 26.91,
+    "pwa_precache_kib": 2859.04
+  },
+  "remaining_acceptance": [
+    "Public deployment, DNS/TLS/IAM, backup restore, AWS performance/resource budgets and real AWS behavior are deployment-owner work",
+    "Newer AWS account free-plan/credit eligibility is account-specific; ongoing zero cost is not established",
+    "Live model reference tables must cover later dates; supplied forecast horizon is historical",
+    "Human submission videos, original design fidelity review, team naming/authorship and permitted submission packaging remain",
+    "Pre-existing tracked data and Git history need organizer-authorization review before publication; no history rewrite performed"
+  ],
+  "cleanup": "Isolated validation services stopped; volumes and all existing application data preserved.",
+  "workspace_migration": {
+    "source": "backend/intelligence",
+    "private_workspace": "backend/private/intelligence",
+    "inference_service": "backend/services/intelligence",
+    "environment_variable": "WAYPOINT_INTELLIGENCE_WORKSPACE",
+    "legacy_configuration": "Previous variable and existing legacy directory supported as fallbacks; canonical variable takes precedence",
+    "backend_tests": {
+      "passed": 132,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 65.41,
+      "command": "pytest -c backend/pytest.ini -q",
+      "note": "Default discovery now includes both intelligence suites"
+    },
+    "frontend_tests": {
+      "passed": 136,
+      "failed": 0,
+      "files": 17
+    },
+    "training": "Ran renamed training entry point in an isolated workspace; produced service, late and forecast artifacts/manifest; active artifacts preserved",
+    "notebook": "All source notebook cells executed from the renamed path; outputs saved only in the private workspace",
+    "exports": "All three exact templates and fresh-process predictions verified; 5014, 60 and 85 rows; allocation has no violations",
+    "docker": "Rebuilt and started isolated stack using canonical mounts and environment variable",
+    "http_inference": {
+      "model_version": "c8277fcbe16a5e78",
+      "known_id_predictions": 3,
+      "forecast_rows": 60,
+      "live_plan_predictions": 1,
+      "unauthenticated": "denied"
+    },
+    "http_workflow": {
+      "four_role_http_workflow": "passed",
+      "async_job": "succeeded",
+      "queue_completion_seconds": 2.075,
+      "duplicate_replay": "deduplicated",
+      "private_evidence": "authorized",
+      "notifications": 6,
+      "order_id": 123,
+      "plan_id": 4
+    },
+    "browser_inference": {
+      "real_dispatcher_plan_predictions": 71,
+      "learned_forecast_ui": "passed",
+      "javascript_errors": 0
+    },
+    "browser_roles": {
+      "browser_role_logins": [
+        {
+          "role": "dispatcher",
+          "path": "/dispatcher/orders",
+          "uncaught_errors": 0,
+          "api_errors": 0
+        },
+        {
+          "role": "loader",
+          "path": "/loader/queue",
+          "uncaught_errors": 0,
+          "api_errors": 0
+        },
+        {
+          "role": "driver",
+          "path": "/driver/home",
+          "uncaught_errors": 0,
+          "api_errors": 0
+        },
+        {
+          "role": "manager",
+          "path": "/store-manager/overview",
+          "uncaught_errors": 0,
+          "api_errors": 0
+        },
+        {
+          "role": "admin",
+          "path": "/administration/team",
+          "uncaught_errors": 0,
+          "api_errors": 0
+        }
+      ]
+    },
+    "static_checks": "Ruff, format (234 files), mypy (159 files), architecture, compilation, frontend contracts (86 operations) and production build passed",
+    "prior_full_browser_suite": "99 passing demo feature tests recorded above; this follow-up reran actual backend-connected role/inference browser checks",
+    "cleanup": "Temporary validation services stopped with data volumes preserved"
+  }
+}

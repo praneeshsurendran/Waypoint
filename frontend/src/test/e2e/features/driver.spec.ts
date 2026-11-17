@@ -42,7 +42,9 @@ for (const width of [390, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     )
-    await expect(page.locator('.mobile-bottom-nav')).toHaveCount(0)
+    await expect(
+      page.getByRole('navigation', { name: 'Compact workspace navigation' }),
+    ).toHaveCount(width < 761 ? 1 : 0)
   })
 }
 
@@ -148,6 +150,12 @@ test('actual browser offline mode preserves proof through refresh and resumes on
   await startAndPark(page)
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
+    if (!navigator.serviceWorker.controller)
+      await new Promise<void>((resolve) =>
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+          once: true,
+        }),
+      )
   })
   await context.setOffline(true)
   await captureAndReview(page)
@@ -183,7 +191,9 @@ test('Driver layouts keep controls accessible at 360–1440px and protect unsync
         await page.evaluate(() => document.documentElement.scrollWidth),
         route,
       ).toBeLessThanOrEqual(width)
-      await expect(page.locator('.mobile-bottom-nav')).toHaveCount(0)
+      await expect(
+        page.getByRole('navigation', { name: 'Compact workspace navigation' }),
+      ).toHaveCount(width < 761 ? 1 : 0)
       const images = await page
         .locator('.driver-screen img:not(.leaflet-tile)')
         .evaluateAll((elements) =>
@@ -227,7 +237,35 @@ test('Driver shares the Dispatcher Leaflet map, fits saved stops and recenters a
 }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/driver/home')
+  await expect(page.getByRole('heading', { name: /Good morning/ })).toBeVisible()
+  await page.evaluate(async () => {
+    const request = indexedDB.open('waypoint-operations-v1')
+    const database = await new Promise<IDBDatabase>((resolve) => {
+      request.onsuccess = () => resolve(request.result)
+    })
+    const transaction = database.transaction('snapshots', 'readwrite')
+    const store = transaction.objectStore('snapshots')
+    const read = store.get('workspace')
+    read.onsuccess = () => {
+      const record = read.result
+      const stop = record.data.stops.find((item: { id: string }) => item.id === 'STOP001')
+      stop.eta = '08:15'
+      for (const order of record.data.orders)
+        if (stop.orderIds.includes(order.id)) {
+          order.vehicleId = 'VEH027'
+          order.windowEnd = '07:30'
+        }
+      record.data.vehicles.find((item: { id: string }) => item.id === 'VEH027').status = 'En route'
+      store.put(record)
+    }
+    await new Promise<void>((resolve) => {
+      transaction.oncomplete = () => resolve()
+    })
+    database.close()
+  })
   await page.goto('/dispatcher/tracking')
+  await page.keyboard.press('Escape')
   await expect(page.locator('.operations-map.leaflet-container')).toBeVisible()
   const delayedVehicle = page.locator('.operations-map path[fill="#c63a2f"]')
   await expect(delayedVehicle).toHaveCount(1)
@@ -292,14 +330,14 @@ test('Driver guards departure, unknown stops and proof steps, and resumes a save
   await page.goto('/driver/proof/submit?stop=STOP001')
   await expect(page).toHaveURL(/\/proof\/review\?stop=STOP001/)
   await page.goto('/driver/route')
-  await page.getByRole('link', { name: 'Resume saved proof' }).click()
+  await page.getByRole('link', { name: 'Resume delivery proof' }).click()
   await expect(page).toHaveURL(/\/proof\/review\?stop=STOP001/)
   await page.getByRole('button', { name: 'Use this photo' }).click()
   await expect(
     page.getByRole('heading', { name: 'Photo attached · ready to review' }),
   ).toBeVisible()
   await page.goto('/driver/route')
-  await page.getByRole('link', { name: 'Resume saved proof' }).click()
+  await page.getByRole('link', { name: 'Resume delivery proof' }).click()
   await expect(page).toHaveURL(/\/proof\/attached\?stop=STOP001/)
   expect((await storedDriverState(page)).statuses[0]).toBe('Arrived')
 })
@@ -574,6 +612,9 @@ test('a revised order quantity requires replacement manager sign-off and preserv
     db.close()
   })
   await page.reload()
+  await expect
+    .poll(async () => (await storedDriverState(page)).queue)
+    .toEqual(expect.arrayContaining([expect.objectContaining({ status: 'review' })]))
   await expect(page.getByRole('heading', { name: 'Route changed while offline' })).toBeVisible()
   await expect(
     page.getByText(

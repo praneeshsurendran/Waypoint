@@ -7,3 +7,6 @@
 **/*backup*
 **/tests
 **/requirements-dev.lock
+
+private/
+intelligence/

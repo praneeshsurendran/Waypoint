@@ -25,3 +25,8 @@ mypy-boto3-s3==1.35.93
 mypy-boto3-sqs==1.35.93
 types-s3transfer==0.10.4
 types-awscrt==0.37.0
+
+-r services/intelligence/requirements.lock
+catboost==1.2.10
+lightgbm==4.7.0
+ortools==9.15.6755

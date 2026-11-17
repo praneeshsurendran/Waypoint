@@ -1,0 +1,8 @@
+[project]
+name = "waypoint-intelligence"
+version = "1.0.0"
+requires-python = ">=3.13"
+description = "Stateless verified-artifact inference for Waypoint planned deliveries and depot demand"
+
+[tool.setuptools.packages.find]
+where = ["src"]

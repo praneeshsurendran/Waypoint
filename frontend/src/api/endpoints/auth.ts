@@ -13,3 +13,7 @@ export const authApi = {
     return contractRequest('/auth/login', 'post', { body: { username, password } })
   },
 }
+
+export function requestAccountChange(options: ContractOptions<'/auth/account-change-requests', 'post'>): Promise<ApiResponse<'/auth/account-change-requests', 'post'>> {
+  return contractRequest('/auth/account-change-requests', 'post', options)
+}

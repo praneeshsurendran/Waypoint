@@ -1,3 +1,6 @@
+For current results and resolved regressions see [November 17 verification](../../docs/challenge-verification.md).
+The report below is retained as a historical baseline.
+
 # Browser validation and existing failures
 
 All 99 existing demo Playwright cases were executed without editing their assertions. The

@@ -146,22 +146,42 @@ def _backtest(
 def compute(data_root: str) -> DemandForecast:
     root = Path(data_root)
     events = _event_weeks(root / "General Data" / "calendar.csv")
-    operating_days = _operating_days(root / "General Data" / "calendar.csv")
-    fleet = _fleet(root / "General Data" / "vehicles.csv")
     outlet_depot: dict[str, str] = {}
     for row in _read_csv(root / "General Data" / "outlets.csv"):
         outlet_depot[row["outlet_id"]] = row["depot"]
 
     # volume[(depot, brand, year, week)] -> [total, chilled]
     volume: dict[tuple[str, str, int, int], list[float]] = defaultdict(lambda: [0.0, 0.0])
-    for row in _read_csv(root / "Training Data" / "deliveries_train.csv"):
-        year, week, _ = dt.date.fromisoformat(row["order_date"]).isocalendar()
-        depot = row["depot"] or outlet_depot.get(row["outlet_id"], "")
-        brand = row["brand"]
-        cell = volume[(depot, brand, year, week)]
-        cell[0] += float(row["order_volume_m3"])
-        if brand == "Fresh" and row["temp_requirement"] == "chilled":
-            cell[1] += float(row["order_volume_m3"])
+    calendar = {
+        row["date"]: (int(row["iso_year"]), int(row["iso_week"]))
+        for row in _read_csv(root / "General Data" / "calendar.csv")
+    }
+    sources = [root / "Training Data" / "deliveries_train.csv"]
+    if (root / "Test Data" / "task1_test_inputs.csv").exists():
+        sources.append(root / "Test Data" / "task1_test_inputs.csv")
+    week_calendar = {
+        dt.date.fromisoformat(day) - dt.timedelta(days=dt.date.fromisoformat(day).weekday()): period
+        for day, period in calendar.items()
+    }
+    seen: set[str] = set()
+    for source in sources:
+        for row in _read_csv(source):
+            identity = row.get("delivery_id")
+            if identity and identity in seen:
+                raise ValueError("Demand history contains a duplicate order")
+            if identity:
+                seen.add(identity)
+            requested = dt.date.fromisoformat(row["order_date"])
+            year, week = (
+                calendar.get(row["order_date"])
+                or week_calendar[requested - dt.timedelta(days=requested.weekday())]
+            )
+            depot = row["depot"] or outlet_depot.get(row["outlet_id"], "")
+            brand = row["brand"]
+            cell = volume[(depot, brand, year, week)]
+            cell[0] += float(row["order_volume_m3"])
+            if brand == "Fresh" and row["temp_requirement"] == "chilled":
+                cell[1] += float(row["order_volume_m3"])
 
     series: dict[tuple[str, str], list[tuple[int, int, float, float]]] = defaultdict(list)
     for (depot, brand, year, week), (total, chilled) in volume.items():
@@ -220,6 +240,21 @@ def compute(data_root: str) -> DemandForecast:
                 }
             )
 
+    capacity = project_capacity(data_root, forecast)
+
+    return {
+        "method": METHOD,
+        "history": history,
+        "forecast": forecast,
+        "capacity": capacity,
+        "backtest": _backtest(series, events),
+    }
+
+
+def project_capacity(data_root: str, forecast: list[DemandWeek]) -> list[WeekCapacity]:
+    root = Path(data_root)
+    fleet = _fleet(root / "General Data" / "vehicles.csv")
+    operating_days = _operating_days(root / "General Data" / "calendar.csv")
     grouped: dict[tuple[str, int, int], dict[str, float]] = defaultdict(
         lambda: {"total_m3": 0.0, "chilled_m3": 0.0}
     )
@@ -258,10 +293,4 @@ def compute(data_root: str) -> DemandForecast:
             }
         )
 
-    return {
-        "method": METHOD,
-        "history": history,
-        "forecast": forecast,
-        "capacity": capacity,
-        "backtest": _backtest(series, events),
-    }
+    return capacity

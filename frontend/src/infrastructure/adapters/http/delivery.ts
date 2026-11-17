@@ -112,7 +112,10 @@ export function createHttpDeliveryApi(): DeliveryApi {
           return stops.map((s) => mapStop(s, refs))
         }
       }
-      const resp = await driverApi.getDriverTripsCurrent().catch(() => null)
+      const resp =
+        getUser()?.role === 'DRIVER'
+          ? await driverApi.getDriverTripsCurrent().catch(() => null)
+          : null
       if (resp?.stops) {
         return resp.stops
           .map((s) => mapStop(s, refs))

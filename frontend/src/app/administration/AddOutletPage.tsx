@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { defaultWindow } from '@/utils/outlets'
 import { type Brand, type Parking } from '@/types/outlets'
-import { useAction } from '@/queries/useOperations'
+import { useAction, useInvalidateOperations } from '@/queries/useOperations'
 import { useApis } from '@/app/providers/ApisContext'
 import { useBreadcrumb } from '@/components/molecules/Breadcrumbs'
 import { AdminIntro, Field } from '@/components/molecules/administration/AdminFields'
@@ -35,6 +35,7 @@ type Errors = Partial<Record<'name' | 'district' | 'window', string>>
 export default function AddOutletPage() {
   const navigate = useNavigate()
   const apis = useApis()
+  const invalidate = useInvalidateOperations()
   const action = useAction()
   const { outlets } = useOutlets()
   const [draft, setDraft] = useState<Draft>({
@@ -76,6 +77,7 @@ export default function AddOutletPage() {
     }
     action.run(async () => {
       const created = await apis.outlets.createOutlet(draft)
+      await invalidate()
       toast.success(`${created.name} was added as ${created.id}`)
       navigate(`/administration/outlets/${created.id}`)
     })

@@ -1,6 +1,6 @@
 # Type safety and API contracts
 
-The four services' Pydantic schemas and typed response contracts own the HTTP wire format.
+The five services' Pydantic schemas and typed response contracts own the HTTP wire format.
 Application view models remain in `frontend/src/types`; they represent UI state, offline
 records and derived labels, rather than duplicating transport DTOs. SQLAlchemy models own
 persistence. The pure allocation domain retains its dataclasses and meaningful strategy port.
@@ -19,7 +19,7 @@ npm run contracts:check
 npm run typecheck
 ```
 
-Export does not connect to a database. It imports the four app factories, writes their OpenAPI
+Export does not connect to a database. It imports the five app factories, writes their OpenAPI
 schemas and regenerates the ownership inventory. The frozen `legacy-v1.json` remains untouched.
 Review schema changes alongside clients; never hand-edit `src/types/generated` or
 `src/api/generated`. Generated files intentionally belong in version control so application
@@ -62,7 +62,7 @@ representation without requiring a timezone, unlike a timestamp.
 
 ## Backend conventions
 
-`backend/mypy.ini` checks all four service packages and technical packages (149 source files),
+`backend/mypy.ini` checks all five service packages and technical packages (159 source files),
 with `check_untyped_defs`, `disallow_untyped_defs`, `no_implicit_optional` and unused-ignore
 checks. No service directory is excluded to obtain a pass. Run from the repository root:
 
@@ -100,7 +100,7 @@ remain accepted for v1 compatibility. Producers enqueue within their owned trans
 consumers validate and durably commit before acknowledging. Inbox hashes detect conflicting
 replays and projection revisions reject stale updates. EventBridge/SQS remain the transport.
 
-Contracts tests retain the original routes and exercise all four service APIs. Frontend tests
+Contracts tests retain the original routes and exercise the database-owning APIs and the stateless inference API. Frontend tests
 exercise malformed successes, required inputs, actual status matching, omission versus null,
 authentication headers, upload boundaries and cancellation. Backend regressions cover
 JWT issuer/audience/signature/expiry, password validation without echoing inputs, cross-day
