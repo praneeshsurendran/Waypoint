@@ -13,9 +13,13 @@ confirm receipts or report issues.
 ## Run locally
 
 ```sh
-cp backend/.env.example backend/.env
-docker compose --env-file backend/.env up --build
+test -f backend/.env || cp backend/.env.example backend/.env
+docker compose --env-file backend/.env up --build --wait --wait-timeout 600
 ```
+
+The first frontend startup downloads npm dependencies and can take several minutes.
+`--wait` returns once the frontend is serving; later installs reuse the npm cache volume.
+Check progress with `docker compose --env-file backend/.env logs -f frontend`.
 
 Frontend: http://localhost:5173. API ingress: http://localhost:8000/api/v1.
 The local stack uses the authorized reference data in `backend/private/intelligence` when present

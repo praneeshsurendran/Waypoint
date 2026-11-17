@@ -33,10 +33,10 @@ new owner histories live under `migrations/`. No empty placeholder service direc
 ## Local stack
 
 ```sh
-cp backend/.env.example backend/.env
+test -f backend/.env || cp backend/.env.example backend/.env
 # Review local credentials. The defaults are synthetic development credentials only.
 docker compose --env-file backend/.env config --quiet
-docker compose --env-file backend/.env up --build
+docker compose --env-file backend/.env up --build --wait --wait-timeout 600
 ```
 
 Frontend: `http://localhost:5173`; API ingress: `http://localhost:8000/api/v1`.
